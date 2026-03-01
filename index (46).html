@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drehbuch → Storyboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Courier+Prime:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c8a052;
+    --dark: #0a0a0f;
+    --panel: #14141e;
+    --border: #2a2a38;
+    --text: #d8d0c0;
+    --dim: #6a6260;
+    --green: #4a9960;
+    --cream: #f0e8d8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Courier Prime', monospace;
+    min-height: 100vh;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-style: italic;
+    color: var(--gold);
+  }
+  .logo span { color: var(--dim); font-style: normal; font-size: 13px; margin-left: 12px; }
+
+  /* ── Upload Zone ── */
+  #upload-zone {
+    max-width: 680px;
+    margin: 60px auto;
+    padding: 0 20px;
+    text-align: center;
+  }
+  .upload-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(40px, 7vw, 70px);
+    font-weight: 700;
+    color: var(--cream);
+    line-height: 1.05;
+    margin-bottom: 12px;
+  }
+  .upload-title em { font-style: italic; color: var(--gold); }
+  .upload-sub { color: var(--dim); font-size: 14px; margin-bottom: 44px; line-height: 1.8; }
+
+  .drop-area {
+    border: 2px dashed var(--border);
+    padding: 56px 40px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    background: transparent;
+  }
+  .drop-area:hover, .drop-area.dragover {
+    border-color: var(--gold);
+    background: rgba(200,160,82,0.04);
+  }
+  .drop-icon { font-size: 44px; margin-bottom: 14px; display: block; }
+  .drop-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .drop-sub { font-size: 12px; color: var(--dim); }
+  #file-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+  .or-div {
+    display: flex; align-items: center; gap: 16px;
+    margin: 22px 0; color: var(--dim); font-size: 12px;
+  }
+  .or-div::before, .or-div::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 12px 28px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-gold { background: var(--gold); color: var(--dark); font-weight: 700; }
+  .btn-gold:hover { background: #d8b062; transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--gold); border: 1.5px solid var(--gold); }
+  .btn-outline:hover { background: rgba(200,160,82,0.08); }
+  .btn-sm { padding: 8px 18px; font-size: 11px; }
+
+  .format-hint {
+    margin-top: 36px; border: 1px solid var(--border); padding: 22px; text-align: left;
+  }
+  .fh-title {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.3em; color: var(--gold); font-size: 12px; margin-bottom: 12px;
+  }
+  .format-hint pre { font-size: 12px; color: var(--dim); line-height: 1.9; white-space: pre-wrap; }
+  .format-hint pre .hl { color: var(--cream); }
+  .format-hint pre .go { color: var(--gold); }
+
+  /* ── Storyboard View ── */
+  #storyboard-view { display: none; padding: 20px 20px 60px; max-width: 1360px; margin: 0 auto; }
+
+  .sb-header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+    padding: 20px 0 28px; border-bottom: 1px solid var(--border); margin-bottom: 28px;
+  }
+  .sb-title { font-family: 'Playfair Display', serif; font-size: 26px; font-style: italic; color: var(--cream); }
+  .sb-meta { font-size: 13px; color: var(--dim); margin-top: 4px; }
+  .sb-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .scenes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
+    gap: 20px;
+  }
+
+  @media (max-width: 620px) {
+    .scenes-grid { grid-template-columns: 1fr; }
+    .scene-card { grid-template-columns: 1fr; }
+    .card-right { border-left: none; border-top: 1px solid var(--border); }
+    header { padding: 16px 20px; }
+  }
+
+  .scene-card {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    transition: border-color 0.2s;
+  }
+  .scene-card:hover { border-color: rgba(200,160,82,0.35); }
+
+  .card-left {
+    padding: 22px; border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .card-nr { font-size: 10px; letter-spacing: 0.4em; color: var(--gold); }
+  .card-heading { font-size: 12px; font-weight: 700; color: var(--cream); line-height: 1.5; }
+  .card-divider { height: 1px; background: var(--border); }
+  .card-sec { font-size: 10px; letter-spacing: 0.25em; color: var(--dim); text-transform: uppercase; }
+  .card-regie { font-size: 12px; color: var(--text); line-height: 1.7; flex: 1; }
+  .card-dialog {
+    font-size: 11px; line-height: 1.8;
+    background: rgba(0,0,0,0.3); padding: 9px;
+    border-left: 2px solid #3a2828;
+  }
+  .d-fig { font-weight: 700; color: var(--gold); font-size: 10px; letter-spacing: 0.15em; }
+  .d-txt { color: #c8a882; font-style: italic; }
+
+  .card-right {
+    padding: 22px; background: #0d1410;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .p-label { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 0.4em; color: #4aaa60; }
+  .p-text { font-size: 12px; color: #78cc90; line-height: 1.8; flex: 1; word-break: break-word; }
+  .p-extras { border-top: 1px solid #1a2e20; padding-top: 9px; }
+  .p-ext-label { font-size: 10px; color: var(--dim); letter-spacing: 0.2em; margin-bottom: 5px; }
+  .p-ext-item { font-size: 10px; color: #3a7a50; }
+
+  .copy-btn {
+    background: rgba(74,153,96,0.12); color: #4aaa60;
+    border: 1px solid #2a5a38; padding: 7px 10px;
+    font-family: 'Courier Prime', monospace; font-size: 10px;
+    letter-spacing: 0.15em; cursor: pointer; text-transform: uppercase;
+    transition: all 0.2s; text-align: center;
+  }
+  .copy-btn:hover { background: rgba(74,153,96,0.22); }
+  .copy-btn.copied { color: var(--gold); border-color: var(--gold); background: rgba(200,160,82,0.08); }
+
+  .title-card {
+    grid-column: 1 / -1; border: 1px solid var(--gold);
+    background: var(--panel); padding: 28px 36px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  .tc-name { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; color: var(--cream); }
+  .tc-stats { font-size: 13px; color: var(--dim); line-height: 2; text-align: right; }
+  .tc-stats strong { color: var(--gold); }
+
+  .no-scenes { grid-column: 1/-1; text-align: center; padding: 60px; color: var(--dim); }
+  .no-scenes-title { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--cream); margin-bottom: 12px; }
+
+  .toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--gold); color: var(--dark);
+    font-family: 'Courier Prime', monospace; font-size: 13px; font-weight: 700;
+    padding: 12px 22px; letter-spacing: 0.08em;
+    opacity: 0; transform: translateY(8px);
+    transition: all 0.3s; pointer-events: none; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  @media print {
+    header, .sb-actions, .copy-btn { display: none !important; }
+    body { background: white; color: black; }
+    .scene-card { border: 1px solid #ccc; break-inside: avoid; }
+    .card-right { background: #f8fff8; }
+    .p-text { color: #1a5a30; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Drehbuch → Storyboard <span>GitHub Pages Tool</span></div>
+  <button class="btn btn-outline btn-sm" id="reset-btn" style="display:none" onclick="doReset()">← Neues Drehbuch</button>
+</header>
+
+<div id="upload-zone">
+  <h1 class="upload-title">Drehbuch<br><em>hochladen.</em></h1>
+  <p class="upload-sub">Lade eine .txt-Datei hoch – das Tool parst alle Szenen<br>und generiert sofort Image-Prompts für Midjourney, Stable Diffusion &amp; DALL·E.</p>
+
+  <div class="drop-area" id="drop-area">
+    <input type="file" id="file-input" accept=".txt">
+    <span class="drop-icon">🎬</span>
+    <div class="drop-label">Drehbuch hier ablegen</div>
+    <div class="drop-sub">oder klicken zum Auswählen · .txt-Datei</div>
+  </div>
+
+  <div class="or-div">oder</div>
+  <button class="btn btn-outline" onclick="loadDemo()">✦ Demo laden (Mephisto)</button>
+
+  <div class="format-hint">
+    <div class="fh-title">📄 Erwartetes Format</div>
+    <pre><span class="hl">INT. WOHNZIMMER - NACHT</span>
+
+Beschreibung der Szene...
+
+<span class="go">        FIGUR A</span>
+  Dialog hier...
+
+<span class="hl">EXT. STRASSE - TAG</span>
+
+Nächste Szene...</pre>
+  </div>
+</div>
+
+<div id="storyboard-view">
+  <div class="sb-header">
+    <div>
+      <div class="sb-title" id="sb-title">Storyboard</div>
+      <div class="sb-meta" id="sb-meta"></div>
+    </div>
+    <div class="sb-actions">
+      <button class="btn btn-outline btn-sm" onclick="copyAll()">📋 Alle Prompts</button>
+      <button class="btn btn-gold btn-sm" onclick="window.print()">🖨 Drucken / PDF</button>
+    </div>
+  </div>
+  <div class="scenes-grid" id="scenes-grid"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Parser ───────────────────────────────────────────────────────────────────
+function parse(text) {
+  const lines = text.split('\n');
+  const scenes = [];
+  let cur = null, mode = null, lastFig = '';
+  const HEAD = /^(INT\.|EXT\.|INT\/EXT\.|INNEN|AUSSEN|I\/A)\s+/i;
+  const FIG  = /^[ \t]{2,}([A-ZÄÖÜ][A-ZÄÖÜ\s\-\.]{1,30})$/;
+  const DLG  = /^[ \t]{4,}(.+)$/;
+
+  for (const line of lines) {
+    if (HEAD.test(line.trim())) {
+      if (cur) scenes.push(cur);
+      cur = { nr: scenes.length + 1, kopf: line.trim(), regie: [], dialoge: [] };
+      mode = null; continue;
+    }
+    if (!cur) continue;
+    if (/^\s*$/.test(line)) { mode = null; continue; }
+    const mf = FIG.exec(line);
+    if (mf && mode !== 'dialog') { lastFig = mf[1].trim(); mode = 'figur'; continue; }
+    const md = DLG.exec(line);
+    if (md && mode === 'figur') {
+      cur.dialoge.push({ figur: lastFig, text: md[1] }); mode = 'dialog'; continue;
+    }
+    if (md && mode === 'dialog') {
+      cur.dialoge[cur.dialoge.length-1].text += ' ' + md[1]; continue;
+    }
+    if (line.trim()) { cur.regie.push(line.trim()); mode = 'regie'; }
+  }
+  if (cur) scenes.push(cur);
+  return scenes;
+}
+
+// ── Prompt ───────────────────────────────────────────────────────────────────
+function prompt(scene) {
+  const k = scene.kopf.toLowerCase();
+  const rest = scene.kopf.replace(/INT\.|EXT\.|INT\/EXT\.|INNEN|AUSSEN/gi,'').trim();
+  const parts = rest.split('-').map(s=>s.trim());
+  const ort = parts[0] || 'location';
+  const zeit = (parts[1]||'').toLowerCase();
+  const licht = /int|innen/.test(k) ? 'indoor lighting' : 'natural outdoor lighting';
+  const zeitMap = {nacht:'night, moonlight',tag:'bright daylight',morgen:'golden hour morning',abend:'sunset warm sky',dämmerung:'dusk blue hour'};
+  let tz = ''; for(const[a,b] of Object.entries(zeitMap)){if(zeit.includes(a)){tz=b;break;}}
+  const reg = scene.regie.slice(0,3).join(' ');
+  const stMap = {dunkel:'dark moody',hell:'bright cheerful',einsam:'lonely isolated',bedrohlich:'threatening tense',ruhig:'calm peaceful',leer:'empty desolate'};
+  let st=''; for(const[a,b] of Object.entries(stMap)){if(reg.toLowerCase().includes(a)){st=b;break;}}
+  const figs = [...new Set(scene.dialoge.map(d=>d.figur))].slice(0,3);
+  return [
+    `Scene at ${ort.toLowerCase()}`, tz, licht, st,
+    figs.length ? `featuring ${figs.join(', ')}` : '',
+    reg.slice(0,90),
+    'cinematic film still, 35mm, shallow depth of field, professional cinematography'
+  ].filter(Boolean).join(', ');
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+let allScenes = [];
+
+function render(scenes, titel) {
+  allScenes = scenes;
+  const grid = document.getElementById('scenes-grid');
+  grid.innerHTML = '';
+
+  const figSet = new Set(scenes.flatMap(s=>s.dialoge.map(d=>d.figur)));
+  const dlgCount = scenes.reduce((a,s)=>a+s.dialoge.length,0);
+
+  // Titelkarte
+  const tc = document.createElement('div');
+  tc.className = 'title-card';
+  tc.innerHTML = `<div class="tc-name">${esc(titel)}</div>
+    <div class="tc-stats">
+      <strong>${scenes.length}</strong> Szenen &nbsp;·&nbsp;
+      <strong>${figSet.size}</strong> Figuren &nbsp;·&nbsp;
+      <strong>${dlgCount}</strong> Dialoge
+    </div>`;
+  grid.appendChild(tc);
+
+  if (!scenes.length) {
+    grid.innerHTML += `<div class="no-scenes">
+      <div class="no-scenes-title">Keine Szenen gefunden</div>
+      <p>Szenenkopf muss mit INT. oder EXT. beginnen.</p>
+    </div>`;
+    return;
+  }
+
+  scenes.forEach((s, i) => {
+    const pr = prompt(s);
+    const regie = s.regie.join(' ') || '—';
+    const dlgHtml = s.dialoge.slice(0,3).map(d=>
+      `<div><span class="d-fig">${esc(d.figur)}</span><br>
+       <span class="d-txt">${esc(d.text.slice(0,80))}${d.text.length>80?'…':''}</span></div>`
+    ).join('');
+
+    const card = document.createElement('div');
+    card.className = 'scene-card';
+    card.innerHTML = `
+      <div class="card-left">
+        <div class="card-nr">SZENE ${String(s.nr).padStart(2,'0')} / ${scenes.length}</div>
+        <div class="card-heading">${esc(s.kopf)}</div>
+        <div class="card-divider"></div>
+        <div class="card-sec">Regieanweisung</div>
+        <div class="card-regie">${esc(regie.slice(0,200))}${regie.length>200?'…':''}</div>
+        ${s.dialoge.length ? `<div class="card-divider"></div><div class="card-sec">Dialog</div><div class="card-dialog">${dlgHtml}</div>` : ''}
+      </div>
+      <div class="card-right">
+        <div class="p-label">🎨 Image Prompt</div>
+        <div class="p-text" id="p${i}">${esc(pr)}</div>
+        <div class="p-extras">
+          <div class="p-ext-label">Empfohlene Zusätze</div>
+          <div class="p-ext-item">• --ar 16:9 --v 6 (Midjourney)</div>
+          <div class="p-ext-item">• cinematic, 8K, film grain</div>
+        </div>
+        <button class="copy-btn" onclick="copyOne(${i},this)">📋 Prompt kopieren</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function copyOne(i, btn) {
+  const text = document.getElementById('p'+i).textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='✅ Kopiert!'; btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='📋 Prompt kopieren';btn.classList.remove('copied');},2000);
+  });
+}
+
+function copyAll() {
+  const all = allScenes.map((s,i)=>`SZENE ${i+1}: ${s.kopf}\n${document.getElementById('p'+i).textContent}`).join('\n\n---\n\n');
+  navigator.clipboard.writeText(all).then(()=>toast('Alle Prompts kopiert!'));
+}
+
+function show(scenes, titel) {
+  document.getElementById('upload-zone').style.display = 'none';
+  document.getElementById('storyboard-view').style.display = 'block';
+  document.getElementById('reset-btn').style.display = 'inline-block';
+  document.getElementById('sb-title').textContent = titel;
+  document.getElementById('sb-meta').textContent = `${scenes.length} Szenen erkannt`;
+  render(scenes, titel);
+  toast(`${scenes.length} Szenen geladen!`);
+}
+
+function doReset() {
+  document.getElementById('upload-zone').style.display = 'block';
+  document.getElementById('storyboard-view').style.display = 'none';
+  document.getElementById('reset-btn').style.display = 'none';
+  document.getElementById('file-input').value = '';
+}
+
+function process(text, name) {
+  const scenes = parse(text);
+  const title = name.replace(/\.txt$/i,'').replace(/_/g,' ').toUpperCase();
+  show(scenes, title);
+}
+
+// File input
+document.getElementById('file-input').addEventListener('change', function(e){
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ev => process(ev.target.result, f.name);
+  r.readAsText(f,'utf-8');
+});
+
+// Drag & drop
+const da = document.getElementById('drop-area');
+da.addEventListener('dragover', e=>{ e.preventDefault(); da.classList.add('dragover'); });
+da.addEventListener('dragleave', ()=>da.classList.remove('dragover'));
+da.addEventListener('drop', e=>{
+  e.preventDefault(); da.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if(!f||!f.name.endsWith('.txt')){ toast('Bitte .txt-Datei ablegen!'); return; }
+  const r = new FileReader();
+  r.onload = ev => process(ev.target.result, f.name);
+  r.readAsText(f,'utf-8');
+});
+
+// Demo
+function loadDemo() {
+  process(`MEPHISTO
+
+INT. BERLINER THEATER - NACHT
+
+Die große Bühne liegt im Halbdunkel. Scheinwerfer beleuchten einzelne Requisiten.
+HENDRIK HÖFGEN tritt auf, gekleidet als Mephisto. Er wirkt bedrohlich und charismatisch.
+Die Kulissen werfen lange Schatten auf den Boden.
+
+        HENDRIK
+  Ich bin der Geist, der stets verneint!
+
+        NICOLETTA
+  Hendrik – du bist grandios. Du bist... ein anderer Mensch.
+
+INT. DIREKTORENBÜRO - TAG
+
+Ein prachtvolles Büro. NS-Fahnen schmücken die Wände.
+HENDRIK steht vor dem GENERALINTENDANTEN. Er wirkt nervös.
+
+        GENERALINTENDANT
+  Sie haben eine große Karriere vor sich, Höfgen.
+  Vorausgesetzt, Sie bleiben... loyal.
+
+        HENDRIK
+  Selbstverständlich, Exzellenz.
+
+EXT. BERLINER STRASSE - MORGEN
+
+Eine graue Stadtlandschaft. Menschen eilen vorbei.
+HENDRIK geht allein durch die leere Straße.
+Herbstblätter wehen über das Pflaster.
+
+        HENDRIK
+  Was bin ich geworden?
+
+INT. GARDEROBE - NACHT
+
+Spiegel überall. Schminktische mit Glühbirnen.
+HENDRIK sitzt allein vor dem großen Spiegel.
+
+        HENDRIK
+  Wer bist du? Wer bin ich?
+  Bin ich Mephisto – oder ist Mephisto ich?`, 'mephisto.txt');
+}
+</script>
+</body>
+</html>
