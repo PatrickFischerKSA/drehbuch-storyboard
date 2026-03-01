@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drehbuch → Storyboard MP4</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Courier+Prime:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:#c8a052; --gold2:#e8c07a;
+  --dark:#08080f; --panel:#11111a; --panel2:#16161f;
+  --border:#252535; --text:#d0c8b8; --dim:#585450;
+  --green:#3a8850; --green2:#5ab870; --cream:#ede5d5;
+  --red:#993333;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--dark);color:var(--text);font-family:'Courier Prime',monospace;min-height:100vh;}
+
+/* ── Header ── */
+header{
+  border-bottom:1px solid var(--border);
+  padding:14px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;background:var(--dark);z-index:100;
+}
+.logo{font-family:'Playfair Display',serif;font-size:18px;font-style:italic;color:var(--gold);}
+.steps{display:flex;border:1px solid var(--border);}
+.step{padding:8px 18px;font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--dim);border-right:1px solid var(--border);transition:all 0.3s;}
+.step:last-child{border-right:none;}
+.step.active{color:var(--gold);background:rgba(200,160,82,0.08);}
+.step.done{color:var(--green2);}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;font-family:'Courier Prime',monospace;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border:none;transition:all 0.2s;}
+.btn-gold{background:var(--gold);color:var(--dark);font-weight:700;}
+.btn-gold:hover{background:var(--gold2);transform:translateY(-1px);}
+.btn-gold:disabled{background:#333;color:#555;cursor:not-allowed;transform:none;}
+.btn-outline{background:transparent;color:var(--gold);border:1.5px solid var(--gold);}
+.btn-outline:hover{background:rgba(200,160,82,0.08);}
+.btn-green{background:var(--green);color:#fff;font-weight:700;}
+.btn-green:hover{background:#4a9960;transform:translateY(-1px);}
+.btn-green:disabled{background:#333;color:#555;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 14px;font-size:10px;}
+.btn-xs{padding:4px 10px;font-size:10px;}
+
+/* ── Pages ── */
+.page{display:none;max-width:1280px;margin:0 auto;padding:28px 20px 80px;}
+.page.active{display:block;}
+
+/* ══════════════════════════════════════════
+   PAGE 1 – UPLOAD
+══════════════════════════════════════════ */
+.upload-hero{text-align:center;padding:36px 0 44px;}
+.upload-title{font-family:'Playfair Display',serif;font-size:clamp(44px,7vw,78px);font-weight:700;color:var(--cream);line-height:1.05;margin-bottom:10px;}
+.upload-title em{font-style:italic;color:var(--gold);}
+.upload-sub{color:var(--dim);font-size:14px;line-height:1.9;margin-bottom:40px;}
+
+.drop-area{border:2px dashed var(--border);padding:48px 36px;cursor:pointer;transition:all 0.3s;position:relative;max-width:520px;margin:0 auto;}
+.drop-area:hover,.drop-area.over{border-color:var(--gold);background:rgba(200,160,82,0.04);}
+.drop-icon{font-size:40px;display:block;margin-bottom:12px;}
+.drop-label{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:0.3em;color:var(--gold);margin-bottom:6px;}
+.drop-sub{font-size:12px;color:var(--dim);}
+#file-input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+
+.or-div{display:flex;align-items:center;gap:14px;margin:20px auto;color:var(--dim);font-size:11px;max-width:520px;}
+.or-div::before,.or-div::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.fmt-box{max-width:520px;margin:28px auto 0;border:1px solid var(--border);padding:18px;text-align:left;}
+.fmt-title{font-size:10px;letter-spacing:0.35em;color:var(--gold);margin-bottom:10px;}
+.fmt-box pre{font-size:12px;color:var(--dim);line-height:1.9;white-space:pre-wrap;}
+.fmt-box pre .hl{color:var(--cream);}
+.fmt-box pre .go{color:var(--gold);}
+
+/* ══════════════════════════════════════════
+   PAGE 2 – SCENES + DALL-E
+══════════════════════════════════════════ */
+.p2-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:24px;}
+.p2-title{font-family:'Playfair Display',serif;font-size:26px;font-style:italic;color:var(--cream);}
+.p2-sub{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.8;}
+.p2-sub strong{color:var(--gold);}
+
+/* API Key bar */
+.api-bar{
+  background:var(--panel);border:1px solid var(--border);
+  padding:16px 20px;margin-bottom:20px;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.api-bar-label{font-size:10px;letter-spacing:0.3em;color:var(--dim);text-transform:uppercase;white-space:nowrap;}
+.api-key-input{
+  flex:1;min-width:220px;padding:8px 12px;
+  background:var(--panel2);border:1px solid var(--border);
+  color:var(--text);font-family:'Courier Prime',monospace;font-size:12px;
+}
+.api-key-input:focus{outline:none;border-color:var(--gold);}
+.api-key-note{font-size:10px;color:var(--dim);white-space:nowrap;}
+.api-key-note a{color:var(--gold);}
+
+/* Generate-all bar */
+.gen-bar{
+  background:rgba(58,136,80,0.08);border:1px solid rgba(58,136,80,0.25);
+  padding:14px 20px;margin-bottom:24px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+.gen-bar-info{font-size:12px;color:var(--green2);line-height:1.7;}
+.gen-bar-info strong{color:var(--cream);}
+
+/* Progress bar */
+.prog-wrap{height:3px;background:var(--border);border-radius:2px;margin-bottom:22px;}
+.prog-bar{height:3px;background:var(--gold);border-radius:2px;transition:width 0.4s ease;}
+
+/* Scene cards */
+.scene-row{display:grid;grid-template-columns:200px 1fr 260px;border:1px solid var(--border);margin-bottom:14px;transition:border-color 0.2s;}
+.scene-row:hover{border-color:rgba(200,160,82,0.25);}
+.scene-row.has-img{border-color:rgba(58,136,80,0.4);}
+.scene-row.generating{border-color:rgba(200,160,82,0.5);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{border-color:rgba(200,160,82,0.3);}50%{border-color:rgba(200,160,82,0.8);}}
+
+/* Image slot */
+.img-slot{background:#090910;position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:150px;overflow:hidden;border-right:1px solid var(--border);transition:background 0.2s;}
+.img-slot:hover{background:#0f0f18;}
+.img-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
+.img-slot.filled img{display:block;}
+.img-slot.filled .slot-ph{display:none;}
+.slot-ph{text-align:center;padding:16px;pointer-events:none;}
+.slot-icon{font-size:26px;display:block;margin-bottom:8px;}
+.slot-lbl{font-size:10px;letter-spacing:0.2em;color:var(--dim);}
+.slot-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;pointer-events:none;}
+.img-slot:hover .slot-overlay{opacity:1;}
+.slot-overlay span{font-size:10px;letter-spacing:0.2em;color:#fff;}
+.slot-file{position:absolute;inset:0;opacity:0;cursor:pointer;}
+
+/* Generating spinner overlay */
+.gen-overlay{position:absolute;inset:0;background:rgba(8,8,15,0.85);display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+.img-slot.generating .gen-overlay{display:flex;}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.gen-status-text{font-size:10px;letter-spacing:0.2em;color:var(--gold);}
+
+/* Scene info */
+.scene-info{padding:18px;border-right:1px solid var(--border);}
+.si-nr{font-size:10px;letter-spacing:0.35em;color:var(--gold);margin-bottom:5px;}
+.si-kopf{font-size:12px;font-weight:700;color:var(--cream);margin-bottom:8px;line-height:1.4;}
+.si-sec{font-size:9px;letter-spacing:0.25em;color:var(--dim);text-transform:uppercase;margin-bottom:4px;}
+.si-regie{font-size:12px;color:var(--text);line-height:1.7;}
+.si-dialog{margin-top:8px;border-left:2px solid #2a2020;padding-left:10px;}
+.si-fig{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.1em;}
+.si-txt{font-size:11px;color:#c0a080;font-style:italic;}
+
+/* Prompt side */
+.prompt-side{padding:14px;background:#0a100d;display:flex;flex-direction:column;gap:9px;}
+.ps-lbl{font-size:9px;letter-spacing:0.35em;color:var(--green2);}
+.ps-txt{font-size:11px;color:#6aaa80;line-height:1.7;flex:1;word-break:break-word;}
+.ps-dur{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--dim);}
+.ps-dur input{width:50px;padding:4px 6px;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-family:'Courier Prime',monospace;font-size:12px;text-align:center;}
+.ps-btns{display:flex;flex-direction:column;gap:6px;}
+.copy-btn{background:rgba(58,136,80,0.12);color:var(--green2);border:1px solid #254535;padding:6px 8px;font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:0.12em;cursor:pointer;text-transform:uppercase;transition:all 0.2s;}
+.copy-btn:hover{background:rgba(58,136,80,0.25);}
+.copy-btn.done{color:var(--gold);border-color:var(--gold);}
+.gen-btn{background:rgba(200,160,82,0.1);color:var(--gold);border:1px solid rgba(200,160,82,0.3);padding:6px 8px;font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:0.12em;cursor:pointer;text-transform:uppercase;transition:all 0.2s;}
+.gen-btn:hover{background:rgba(200,160,82,0.2);}
+.gen-btn:disabled{background:transparent;color:var(--dim);border-color:var(--border);cursor:not-allowed;}
+
+/* ══════════════════════════════════════════
+   PAGE 3 – EXPORT
+══════════════════════════════════════════ */
+.exp-center{max-width:600px;margin:0 auto;text-align:center;padding:36px 0;}
+.exp-title{font-family:'Playfair Display',serif;font-size:48px;font-weight:700;color:var(--cream);margin-bottom:8px;}
+.exp-title em{font-style:italic;color:var(--gold);}
+.exp-sub{color:var(--dim);font-size:14px;line-height:1.8;margin-bottom:32px;}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin-bottom:28px;text-align:left;}
+.sc{background:var(--panel);padding:18px;}
+.sc-lbl{font-size:10px;letter-spacing:0.3em;color:var(--dim);text-transform:uppercase;margin-bottom:7px;}
+.sc select,.sc input{width:100%;padding:7px 10px;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-family:'Courier Prime',monospace;font-size:13px;}
+
+.rp{display:none;width:100%;border:1px solid var(--border);padding:22px;margin-top:20px;text-align:left;}
+.rp-title{font-size:10px;letter-spacing:0.3em;color:var(--gold);margin-bottom:10px;}
+.rp-wrap{height:4px;background:var(--border);border-radius:2px;margin-bottom:10px;}
+.rp-bar{height:4px;background:var(--gold);border-radius:2px;width:0%;transition:width 0.25s;}
+.rp-status{font-size:12px;color:var(--dim);}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--gold);color:var(--dark);font-family:'Courier Prime',monospace;font-size:13px;font-weight:700;padding:11px 20px;opacity:0;transform:translateY(8px);transition:all 0.3s;pointer-events:none;z-index:9999;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.err{background:#cc4444;color:#fff;}
+
+canvas#rc{display:none;}
+
+@media(max-width:760px){
+  .scene-row{grid-template-columns:1fr;}
+  .img-slot{min-height:160px;border-right:none;border-bottom:1px solid var(--border);}
+  .scene-info{border-right:none;border-bottom:1px solid var(--border);}
+  .api-bar{flex-direction:column;align-items:flex-start;}
+  header{flex-wrap:wrap;gap:10px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Drehbuch → Storyboard MP4</div>
+  <div class="steps">
+    <div class="step active" id="step1">① Drehbuch</div>
+    <div class="step" id="step2">② Szenen & Bilder</div>
+    <div class="step" id="step3">③ MP4 Export</div>
+  </div>
+</header>
+
+<!-- ══════════ PAGE 1 ══════════ -->
+<div class="page active" id="page1">
+  <div class="upload-hero">
+    <h1 class="upload-title">Drehbuch<br><em>hochladen.</em></h1>
+    <p class="upload-sub">Lade dein Drehbuch als .txt-Datei hoch.<br>Bilder werden automatisch per DALL-E 3 generiert – oder manuell hochgeladen.</p>
+
+    <div class="drop-area" id="drop-area">
+      <input type="file" id="file-input" accept=".txt">
+      <span class="drop-icon">📄</span>
+      <div class="drop-label">Drehbuch hier ablegen</div>
+      <div class="drop-sub">oder klicken · .txt-Datei</div>
+    </div>
+    <div class="or-div">oder</div>
+    <button class="btn btn-outline" onclick="loadDemo()">✦ Demo laden (Mephisto)</button>
+
+    <div class="fmt-box">
+      <div class="fmt-title">📄 Erwartetes Format</div>
+      <pre><span class="hl">INT. WOHNZIMMER - NACHT</span>
+
+Beschreibung der Szene...
+
+<span class="go">        FIGUR A</span>
+  Dialog hier...
+
+<span class="hl">EXT. STRASSE - TAG</span>
+Nächste Szene...</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PAGE 2 ══════════ -->
+<div class="page" id="page2">
+
+  <!-- API Key Bar -->
+  <div class="api-bar">
+    <span class="api-bar-label">🤖 OpenAI API Key</span>
+    <input type="password" class="api-key-input" id="api-key" placeholder="sk-proj-..." autocomplete="off">
+    <button class="btn btn-outline btn-sm" onclick="testApiKey()">Testen</button>
+    <span class="api-key-note">
+      Key wird nur lokal im Browser gespeichert &nbsp;·&nbsp;
+      <a href="https://platform.openai.com/api-keys" target="_blank">Key holen →</a>
+    </span>
+  </div>
+
+  <!-- Generate All Bar -->
+  <div class="gen-bar">
+    <div class="gen-bar-info">
+      <strong>Alle Bilder automatisch generieren</strong> mit DALL-E 3<br>
+      Kosten: ca. $0.04 pro Bild (Standard) · <span id="cost-estimate"></span>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-green btn-sm" id="gen-all-btn" onclick="generateAll()">✨ Alle generieren</button>
+      <button class="btn btn-outline btn-sm" onclick="stopGeneration()">⏹ Stopp</button>
+    </div>
+  </div>
+
+  <div class="p2-header">
+    <div>
+      <div class="p2-title" id="film-title">Storyboard</div>
+      <div class="p2-sub">
+        <span id="scene-badge"></span> <span id="img-badge"></span><br>
+        Tipp: Einzelne Bilder per Klick auf das Bild-Feld manuell hochladen oder ersetzen.
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+      <button class="btn btn-outline btn-sm" onclick="goPage(1)">← Zurück</button>
+      <button class="btn btn-gold" onclick="goPage(3)">Weiter → MP4 ›</button>
+    </div>
+  </div>
+
+  <div class="prog-wrap"><div class="prog-bar" id="img-prog"></div></div>
+  <div id="scenes-container"></div>
+
+  <div style="text-align:center;margin-top:24px;">
+    <button class="btn btn-gold" onclick="goPage(3)">Weiter → MP4 Export ›</button>
+  </div>
+</div>
+
+<!-- ══════════ PAGE 3 ══════════ -->
+<div class="page" id="page3">
+  <div class="exp-center">
+    <h2 class="exp-title">MP4<br><em>Export.</em></h2>
+    <p class="exp-sub" id="exp-sub">Konfiguriere das Video und exportiere es direkt im Browser.</p>
+
+    <div class="settings-grid">
+      <div class="sc">
+        <div class="sc-lbl">Dauer pro Szene (Sek.)</div>
+        <input type="number" id="dur-def" value="6" min="2" max="30">
+      </div>
+      <div class="sc">
+        <div class="sc-lbl">Auflösung</div>
+        <select id="res">
+          <option value="1280x720">1280 × 720 (HD)</option>
+          <option value="1920x1080">1920 × 1080 (Full HD)</option>
+          <option value="854x480">854 × 480 (SD)</option>
+        </select>
+      </div>
+      <div class="sc">
+        <div class="sc-lbl">Szenen ohne Bild</div>
+        <select id="missing">
+          <option value="placeholder">Platzhalter zeigen</option>
+          <option value="skip">Überspringen</option>
+        </select>
+      </div>
+      <div class="sc">
+        <div class="sc-lbl">Text-Overlay</div>
+        <select id="overlay">
+          <option value="full">Szenenkopf + Dialog</option>
+          <option value="kopf">Nur Szenenkopf</option>
+          <option value="none">Kein Text</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+      <button class="btn btn-green" id="exp-btn" onclick="startExport()" style="font-size:14px;padding:13px 34px;">
+        🎬 Video exportieren (MP4 / WebM)
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="goPage(2)">← Szenen bearbeiten</button>
+    </div>
+
+    <div class="rp" id="rp">
+      <div class="rp-title">RENDERING...</div>
+      <div class="rp-wrap"><div class="rp-bar" id="rp-bar"></div></div>
+      <div class="rp-status" id="rp-status">Vorbereitung...</div>
+    </div>
+  </div>
+</div>
+
+<canvas id="rc"></canvas>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+let scenes = [];
+let filmTitle = 'STORYBOARD';
+let sceneData = []; // { imageDataURL, duration }
+let stopFlag = false;
+
+/* ═══════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════ */
+function goPage(n) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page' + n).classList.add('active');
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active','done');
+    if (i+1 < n) s.classList.add('done');
+    if (i+1 === n) s.classList.add('active');
+  });
+  if (n === 3) updateExpPage();
+  window.scrollTo(0,0);
+}
+
+/* ═══════════════════════════════════════════
+   PARSER
+═══════════════════════════════════════════ */
+function parse(text) {
+  const lines = text.split('\n');
+  const result = [];
+  let cur = null, mode = null, lastFig = '';
+  const HEAD = /^(INT\.|EXT\.|INT\/EXT\.|INNEN|AUSSEN|I\/A)\s+/i;
+  const FIG  = /^[ \t]{2,}([A-ZÄÖÜ][A-ZÄÖÜ\s\-\.]{1,30})$/;
+  const DLG  = /^[ \t]{4,}(.+)$/;
+  for (const line of lines) {
+    if (HEAD.test(line.trim())) {
+      if (cur) result.push(cur);
+      cur = { nr: result.length+1, kopf: line.trim(), regie: [], dialoge: [] };
+      mode = null; continue;
+    }
+    if (!cur) continue;
+    if (/^\s*$/.test(line)) { mode = null; continue; }
+    const mf = FIG.exec(line);
+    if (mf && mode !== 'dialog') { lastFig = mf[1].trim(); mode = 'figur'; continue; }
+    const md = DLG.exec(line);
+    if (md && mode === 'figur') { cur.dialoge.push({figur:lastFig, text:md[1]}); mode='dialog'; continue; }
+    if (md && mode === 'dialog') { cur.dialoge[cur.dialoge.length-1].text += ' '+md[1]; continue; }
+    if (line.trim()) { cur.regie.push(line.trim()); mode='regie'; }
+  }
+  if (cur) result.push(cur);
+  return result;
+}
+
+/* ═══════════════════════════════════════════
+   PROMPT GENERATOR
+═══════════════════════════════════════════ */
+function makePrompt(s) {
+  const k = s.kopf.toLowerCase();
+  const rest = s.kopf.replace(/INT\.|EXT\.|INT\/EXT\.|INNEN|AUSSEN/gi,'').trim();
+  const parts = rest.split('-').map(x=>x.trim());
+  const ort = parts[0]||'location';
+  const zeit = (parts[1]||'').toLowerCase();
+  const licht = /int|innen/.test(k) ? 'indoor lighting, interior' : 'natural outdoor lighting, exterior';
+  const ztMap = {nacht:'night scene, moonlight, dark atmosphere',tag:'bright daylight',morgen:'golden hour, soft morning light',abend:'sunset, warm orange glow',dämmerung:'dusk, blue hour'};
+  let tz=''; for(const[a,b] of Object.entries(ztMap)){if(zeit.includes(a)){tz=b;break;}}
+  const reg = s.regie.slice(0,3).join(' ');
+  const stMap = {dunkel:'dark moody atmosphere',hell:'bright cheerful',einsam:'lonely isolated',bedrohlich:'threatening tense',ruhig:'calm peaceful',leer:'empty desolate',historisch:'historical 1930s setting'};
+  let st=''; for(const[a,b] of Object.entries(stMap)){if(reg.toLowerCase().includes(a)){st=b;break;}}
+  const figs = [...new Set(s.dialoge.map(d=>d.figur))].slice(0,2);
+  return [
+    `Cinematic film still, ${ort.toLowerCase()}`,
+    tz, licht, st,
+    figs.length ? `with characters ${figs.join(' and ')}` : '',
+    reg.slice(0,90),
+    '35mm photography, shallow depth of field, dramatic lighting, 1930s Germany aesthetic, award-winning cinematography'
+  ].filter(Boolean).join(', ');
+}
+
+/* ═══════════════════════════════════════════
+   RENDER SCENES
+═══════════════════════════════════════════ */
+function renderScenes() {
+  const c = document.getElementById('scenes-container');
+  c.innerHTML = '';
+  const costPerImg = 0.04;
+  document.getElementById('cost-estimate').textContent =
+    `${scenes.length} Szenen = ca. $${(scenes.length * costPerImg).toFixed(2)}`;
+
+  scenes.forEach((s, i) => {
+    const pr = makePrompt(s);
+    const regie = s.regie.join(' ') || '—';
+    const dlgHtml = s.dialoge.slice(0,2).map(d=>
+      `<div class="si-fig">${esc(d.figur)}</div>
+       <div class="si-txt">${esc(d.text.slice(0,65))}${d.text.length>65?'…':''}</div>`
+    ).join('');
+
+    const row = document.createElement('div');
+    row.className = 'scene-row' + (sceneData[i].imageDataURL ? ' has-img' : '');
+    row.id = 'row-'+i;
+    row.innerHTML = `
+      <div class="img-slot ${sceneData[i].imageDataURL?'filled':''}" id="slot-${i}" onclick="triggerFile(${i})">
+        <input type="file" class="slot-file" accept="image/*" id="img-file-${i}" onchange="handleFile(${i},this)">
+        <img id="thumb-${i}" src="${sceneData[i].imageDataURL||''}">
+        <div class="slot-ph">
+          <span class="slot-icon">🖼</span>
+          <div class="slot-lbl">Klicken zum<br>Hochladen</div>
+        </div>
+        <div class="slot-overlay"><span>ERSETZEN</span></div>
+        <div class="gen-overlay" id="gen-ov-${i}">
+          <div class="spinner"></div>
+          <div class="gen-status-text">GENERIERE...</div>
+        </div>
+      </div>
+
+      <div class="scene-info">
+        <div class="si-nr">SZENE ${String(s.nr).padStart(2,'0')} / ${scenes.length}</div>
+        <div class="si-kopf">${esc(s.kopf)}</div>
+        <div class="si-sec">Regieanweisung</div>
+        <div class="si-regie">${esc(regie.slice(0,180))}${regie.length>180?'…':''}</div>
+        ${s.dialoge.length ? `<div class="si-dialog">${dlgHtml}</div>` : ''}
+      </div>
+
+      <div class="prompt-side">
+        <div class="ps-lbl">🎨 Image Prompt</div>
+        <div class="ps-txt" id="p-${i}">${esc(pr)}</div>
+        <div class="ps-dur">
+          <span>DAUER SEK</span>
+          <input type="number" min="1" max="60" value="${sceneData[i].duration}"
+                 onchange="sceneData[${i}].duration=parseInt(this.value)||6">
+        </div>
+        <div class="ps-btns">
+          <button class="gen-btn" id="gen-btn-${i}" onclick="generateOne(${i})">✨ Mit DALL-E generieren</button>
+          <button class="copy-btn" onclick="copyPrompt(${i},this)">📋 Prompt kopieren</button>
+        </div>
+      </div>`;
+    c.appendChild(row);
+  });
+  updateProgress();
+}
+
+function triggerFile(i) {
+  document.getElementById('img-file-'+i).click();
+}
+
+function handleFile(i, input) {
+  const f = input.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = e => setImage(i, e.target.result);
+  r.readAsDataURL(f);
+}
+
+function setImage(i, dataURL) {
+  sceneData[i].imageDataURL = dataURL;
+  const thumb = document.getElementById('thumb-'+i);
+  if (thumb) { thumb.src = dataURL; }
+  const slot = document.getElementById('slot-'+i);
+  if (slot) { slot.classList.add('filled'); }
+  const row = document.getElementById('row-'+i);
+  if (row) { row.classList.add('has-img'); row.classList.remove('generating'); }
+  updateProgress();
+}
+
+function updateProgress() {
+  const filled = sceneData.filter(s=>s.imageDataURL).length;
+  const pct = scenes.length > 0 ? (filled/scenes.length)*100 : 0;
+  document.getElementById('img-prog').style.width = pct+'%';
+  document.getElementById('img-badge').innerHTML =
+    `<span style="color:var(--green2)">🖼 ${filled}/${scenes.length} Bilder</span>`;
+}
+
+function copyPrompt(i, btn) {
+  navigator.clipboard.writeText(document.getElementById('p-'+i).textContent).then(()=>{
+    btn.textContent='✅ Kopiert!'; btn.classList.add('done');
+    setTimeout(()=>{btn.textContent='📋 Prompt kopieren';btn.classList.remove('done');},2000);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   DALL-E 3 API
+═══════════════════════════════════════════ */
+function getApiKey() {
+  return document.getElementById('api-key').value.trim();
+}
+
+async function testApiKey() {
+  const key = getApiKey();
+  if (!key) { toast('Bitte API-Key eingeben!', true); return; }
+  toast('Teste Key...');
+  try {
+    const r = await fetch('https://api.openai.com/v1/models', {
+      headers: { 'Authorization': 'Bearer ' + key }
+    });
+    if (r.ok) toast('✅ API-Key gültig!');
+    else toast('❌ Ungültiger Key!', true);
+  } catch(e) { toast('❌ Verbindungsfehler', true); }
+}
+
+async function generateOne(i) {
+  const key = getApiKey();
+  if (!key) { toast('Bitte zuerst OpenAI API-Key eingeben!', true); return; }
+
+  const prompt = document.getElementById('p-'+i).textContent;
+  const btn = document.getElementById('gen-btn-'+i);
+  const slot = document.getElementById('slot-'+i);
+  const ov = document.getElementById('gen-ov-'+i);
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Generiere...';
+  slot.classList.add('generating');
+  ov.style.display = 'flex';
+  document.getElementById('row-'+i).classList.add('generating');
+
+  try {
+    const imgURL = await callDallE(key, prompt);
+    // Fetch as blob (CORS-proxy not needed – URL is temporary public)
+    const blob = await fetch(imgURL).then(r => r.blob());
+    const dataURL = await blobToDataURL(blob);
+    setImage(i, dataURL);
+    toast(`✅ Szene ${i+1} generiert!`);
+  } catch(e) {
+    toast('❌ Fehler: ' + e.message, true);
+    slot.classList.remove('generating');
+    document.getElementById('row-'+i).classList.remove('generating');
+  } finally {
+    ov.style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = '✨ Mit DALL-E generieren';
+  }
+}
+
+async function generateAll() {
+  const key = getApiKey();
+  if (!key) { toast('Bitte zuerst OpenAI API-Key eingeben!', true); return; }
+  stopFlag = false;
+  const btn = document.getElementById('gen-all-btn');
+  btn.disabled = true;
+
+  for (let i = 0; i < scenes.length; i++) {
+    if (stopFlag) break;
+    if (sceneData[i].imageDataURL) continue; // Skip already generated
+    await generateOne(i);
+    if (i < scenes.length - 1) await sleep(1200); // Rate limit buffer
+  }
+
+  btn.disabled = false;
+  if (!stopFlag) toast('🎉 Alle Bilder generiert!');
+}
+
+function stopGeneration() {
+  stopFlag = true;
+  toast('⏹ Generation gestoppt.');
+}
+
+async function callDallE(key, prompt) {
+  const body = {
+    model: 'dall-e-3',
+    prompt: prompt.slice(0, 1000), // DALL-E 3 max prompt length
+    size: '1792x1024',             // Widescreen 16:9 approx
+    quality: 'standard',
+    n: 1
+  };
+  const r = await fetch('https://api.openai.com/v1/images/generations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + key
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(()=>({}));
+    throw new Error(err.error?.message || `HTTP ${r.status}`);
+  }
+  const data = await r.json();
+  return data.data[0].url;
+}
+
+function blobToDataURL(blob) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   PAGE 3 – EXPORT
+═══════════════════════════════════════════ */
+function updateExpPage() {
+  const filled = sceneData.filter(s=>s.imageDataURL).length;
+  document.getElementById('exp-sub').innerHTML =
+    `<strong style="color:var(--gold)">${filled} / ${scenes.length}</strong> Szenen haben ein Bild.` +
+    (filled < scenes.length ? ' Szenen ohne Bild werden als Platzhalter gerendert.' : ' Alle Szenen sind bereit!');
+}
+
+async function startExport() {
+  const durDef = parseInt(document.getElementById('dur-def').value)||6;
+  const [W,H] = document.getElementById('res').value.split('x').map(Number);
+  const missingMode = document.getElementById('missing').value;
+  const overlayMode = document.getElementById('overlay').value;
+
+  const toRender = scenes.filter((_,i) => {
+    if (missingMode==='skip' && !sceneData[i].imageDataURL) return false;
+    return true;
+  });
+  if (!toRender.length) { toast('Keine Szenen!', true); return; }
+
+  const canvas = document.getElementById('rc');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const stream = canvas.captureStream(25);
+  const mime = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')
+    ? 'video/mp4;codecs=avc1'
+    : MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+    ? 'video/webm;codecs=vp9'
+    : 'video/webm';
+  const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+
+  const chunks = [];
+  const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 5000000 });
+  recorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, {type:mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filmTitle.toLowerCase().replace(/\s+/g,'-')+'-storyboard.'+ext;
+    a.click(); URL.revokeObjectURL(url);
+    document.getElementById('rp').style.display = 'none';
+    document.getElementById('exp-btn').disabled = false;
+    document.getElementById('exp-btn').textContent = '🎬 Video exportieren (MP4 / WebM)';
+    toast('✅ Video heruntergeladen!');
+  };
+
+  document.getElementById('rp').style.display = 'block';
+  document.getElementById('exp-btn').disabled = true;
+  document.getElementById('exp-btn').textContent = 'Rendering...';
+  document.getElementById('rp-bar').style.width = '0%';
+  recorder.start();
+
+  const FPS = 25;
+  for (let idx = 0; idx < toRender.length; idx++) {
+    const scIdx = scenes.indexOf(toRender[idx]);
+    const s = toRender[idx];
+    const dur = sceneData[scIdx].duration || durDef;
+    const frames = dur * FPS;
+    document.getElementById('rp-status').textContent = `Szene ${idx+1}/${toRender.length}: ${s.kopf.slice(0,50)}`;
+    document.getElementById('rp-bar').style.width = Math.round((idx/toRender.length)*100)+'%';
+
+    let img = null;
+    if (sceneData[scIdx].imageDataURL) img = await loadImg(sceneData[scIdx].imageDataURL);
+
+    for (let f = 0; f < frames; f++) {
+      drawFrame(ctx, W, H, s, img, overlayMode, f, frames);
+      if (f % 5 === 0) await sleep(0);
+    }
+  }
+
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
+  await sleep(300);
+  recorder.stop();
+  document.getElementById('rp-bar').style.width = '100%';
+  document.getElementById('rp-status').textContent = 'Fertig – Download startet...';
+}
+
+function drawFrame(ctx, W, H, scene, img, overlayMode, f, total) {
+  ctx.clearRect(0,0,W,H);
+  if (img) {
+    const scale = 1 + (f/total)*0.04;
+    const ox=(W-W*scale)/2, oy=(H-H*scale)/2;
+    ctx.drawImage(img, ox, oy, W*scale, H*scale);
+  } else {
+    const g = ctx.createLinearGradient(0,0,W,H);
+    g.addColorStop(0,'#0a0a1a'); g.addColorStop(1,'#0d1020');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(200,160,82,0.07)'; ctx.lineWidth=1;
+    for(let x=0;x<W;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=80){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    ctx.fillStyle='rgba(200,160,82,0.25)';
+    ctx.font=`bold ${Math.round(H*0.04)}px monospace`;
+    ctx.textAlign='center';
+    ctx.fillText('[ KEIN BILD ]', W/2, H/2);
+  }
+
+  if (overlayMode==='none') return;
+
+  const fi=10, alpha=f<fi?f/fi:f>total-fi?(total-f)/fi:1;
+  const ovH = H*0.26;
+  const g2 = ctx.createLinearGradient(0,H-ovH*1.6,0,H);
+  g2.addColorStop(0,'rgba(0,0,0,0)'); g2.addColorStop(1,`rgba(0,0,0,${0.85*alpha})`);
+  ctx.fillStyle=g2; ctx.fillRect(0,H-ovH*1.6,W,ovH*1.6);
+
+  ctx.globalAlpha = alpha;
+  const sz1=Math.round(H*0.018), sz2=Math.round(H*0.028), sz3=Math.round(H*0.022);
+  ctx.textAlign='left';
+
+  ctx.fillStyle='#c8a052'; ctx.font=`${sz1}px 'Courier Prime',monospace`;
+  ctx.fillText(`SZENE ${String(scene.nr).padStart(2,'0')}`, W*0.05, H-ovH+sz1*1.4);
+
+  ctx.fillStyle='#ede5d5'; ctx.font=`bold ${sz2}px 'Courier Prime',monospace`;
+  ctx.fillText(scene.kopf.slice(0,65), W*0.05, H-ovH+sz1*3.3);
+
+  if (overlayMode==='full' && scene.dialoge.length > 0) {
+    const d = scene.dialoge[0];
+    const txt = `${d.figur}: "${d.text.slice(0,55)}${d.text.length>55?'…':'"'}`;
+    ctx.fillStyle='rgba(200,160,100,0.9)'; ctx.font=`italic ${sz3}px 'Courier Prime',monospace`;
+    ctx.fillText(txt, W*0.05, H-sz3*1.8);
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ═══════════════════════════════════════════
+   INIT FROM FILE
+═══════════════════════════════════════════ */
+function processText(text, name) {
+  scenes = parse(text);
+  if (!scenes.length) { toast('Keine Szenen gefunden!', true); return; }
+  filmTitle = name.replace(/\.txt$/i,'').replace(/[_-]/g,' ').toUpperCase();
+  sceneData = scenes.map(()=>({imageDataURL:null, duration:6}));
+  document.getElementById('film-title').textContent = filmTitle;
+  document.getElementById('scene-badge').innerHTML =
+    `<strong style="color:var(--gold)">${scenes.length} Szenen</strong>`;
+  renderScenes();
+  goPage(2);
+  toast(`${scenes.length} Szenen geladen!`);
+}
+
+document.getElementById('file-input').addEventListener('change', function(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>processText(ev.target.result,f.name);
+  r.readAsText(f,'utf-8');
+});
+const da=document.getElementById('drop-area');
+da.addEventListener('dragover',e=>{e.preventDefault();da.classList.add('over');});
+da.addEventListener('dragleave',()=>da.classList.remove('over'));
+da.addEventListener('drop',e=>{
+  e.preventDefault();da.classList.remove('over');
+  const f=e.dataTransfer.files[0];
+  if(!f||!f.name.endsWith('.txt')){toast('Bitte .txt-Datei!',true);return;}
+  const r=new FileReader();
+  r.onload=ev=>processText(ev.target.result,f.name);
+  r.readAsText(f,'utf-8');
+});
+
+function loadDemo() {
+  processText(`MEPHISTO
+
+INT. BERLINER THEATER - NACHT
+
+Die große Bühne liegt im Halbdunkel. Scheinwerfer beleuchten einzelne Requisiten.
+HENDRIK HÖFGEN tritt auf als Mephisto. Bedrohlich, charismatisch.
+
+        HENDRIK
+  Ich bin der Geist, der stets verneint!
+
+        NICOLETTA
+  Hendrik – du bist grandios. Du bist ein anderer Mensch.
+
+INT. DIREKTORENBÜRO - TAG
+
+Prachtvolles Büro mit NS-Fahnen. Sonnenlicht durch hohe Fenster.
+HENDRIK steht vor dem GENERALINTENDANTEN.
+
+        GENERALINTENDANT
+  Sie haben eine große Karriere vor sich, Höfgen.
+  Vorausgesetzt, Sie bleiben... loyal.
+
+EXT. BERLINER STRASSE - MORGEN
+
+Graue Stadtlandschaft. Herbstblätter wehen über das Pflaster.
+HENDRIK geht allein. Verloren trotz Pelzmantel.
+
+        HENDRIK
+  Was bin ich geworden?
+
+INT. GARDEROBE - NACHT
+
+Spiegel überall. Schminktische mit Glühbirnen. Licht flackert.
+HENDRIK sitzt allein vor dem Spiegel.
+
+        HENDRIK
+  Wer bist du? Wer bin ich?
+  Bin ich Mephisto – oder ist Mephisto ich?`, 'mephisto.txt');
+}
+
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg, err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(err?' err':'');
+  setTimeout(()=>t.classList.remove('show'),2600);
+}
+function loadImg(src){
+  return new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src;});
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+</script>
+</body>
+</html>
