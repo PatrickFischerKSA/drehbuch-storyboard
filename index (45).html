@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drehbuch → Storyboard MP4</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c8a052;
+    --gold-light: #e8c07a;
+    --cream: #f0e8d8;
+    --dark: #0a0a0f;
+    --dark-mid: #111118;
+    --panel: #16161f;
+    --text: #d8d0c0;
+    --text-dim: #7a7268;
+    --green: #5aaa70;
+    --red: #aa4040;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Courier Prime', monospace;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* ── Film grain overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* ── Filmstrip border ── */
+  body::after {
+    content: '';
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 40px;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--dark) 0px,
+      var(--dark) 10px,
+      #1a1a22 10px,
+      #1a1a22 20px
+    );
+    border-right: 2px solid #2a2a35;
+    z-index: 100;
+  }
+
+  .filmstrip-right {
+    position: fixed;
+    right: 0; top: 0; bottom: 0;
+    width: 40px;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--dark) 0px,
+      var(--dark) 10px,
+      #1a1a22 10px,
+      #1a1a22 20px
+    );
+    border-left: 2px solid #2a2a35;
+    z-index: 100;
+  }
+
+  /* Filmstrip holes */
+  .filmstrip-holes-left, .filmstrip-holes-right {
+    position: fixed;
+    top: 0; bottom: 0;
+    width: 40px;
+    z-index: 101;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 20px;
+    gap: 20px;
+    pointer-events: none;
+  }
+  .filmstrip-holes-left { left: 0; }
+  .filmstrip-holes-right { right: 0; }
+
+  .hole {
+    width: 18px; height: 13px;
+    background: var(--dark);
+    border: 1.5px solid #2a2a35;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  main {
+    margin: 0 60px;
+    max-width: 1100px;
+    margin-inline: auto;
+    padding: 0 60px;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    padding: 80px 20px;
+  }
+
+  .scene-label {
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    animation: fadeIn 1s ease 0.2s both;
+  }
+
+  .hero-eyebrow {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(11px, 1.5vw, 14px);
+    letter-spacing: 0.6em;
+    color: var(--gold);
+    margin-bottom: 16px;
+    animation: fadeIn 1s ease 0.4s both;
+  }
+
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(52px, 9vw, 110px);
+    font-weight: 900;
+    line-height: 0.9;
+    color: var(--cream);
+    margin-bottom: 8px;
+    animation: slideUp 1s cubic-bezier(0.16,1,0.3,1) 0.3s both;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .hero-arrow {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(40px, 7vw, 80px);
+    color: var(--text-dim);
+    display: block;
+    margin: 0 0 8px;
+    animation: slideUp 1s cubic-bezier(0.16,1,0.3,1) 0.45s both;
+  }
+
+  .hero-title2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(36px, 6vw, 76px);
+    font-weight: 700;
+    font-style: italic;
+    color: var(--text-dim);
+    animation: slideUp 1s cubic-bezier(0.16,1,0.3,1) 0.5s both;
+  }
+
+  .hero-tagline {
+    margin-top: 36px;
+    font-size: 15px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    max-width: 520px;
+    line-height: 1.7;
+    animation: fadeIn 1s ease 0.8s both;
+  }
+
+  .hero-divider {
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+    margin: 36px auto;
+    animation: fadeIn 1s ease 1s both;
+  }
+
+  /* ── CTA Buttons ── */
+  .cta-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeIn 1s ease 1.1s both;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: var(--dark);
+    font-weight: 700;
+  }
+  .btn-primary:hover {
+    background: var(--gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(200,160,82,0.3);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--gold);
+    border: 1.5px solid var(--gold);
+  }
+  .btn-secondary:hover {
+    background: rgba(200,160,82,0.1);
+    transform: translateY(-2px);
+  }
+
+  /* ── Section ── */
+  section {
+    padding: 100px 0;
+    border-top: 1px solid #1e1e28;
+  }
+
+  .section-label {
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 700;
+    color: var(--cream);
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+
+  .section-title em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  /* ── Feature Cards ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: #1e1e28;
+    margin-top: 60px;
+    border: 1px solid #1e1e28;
+  }
+
+  .feature-card {
+    background: var(--panel);
+    padding: 40px 32px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--gold);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .feature-card:hover { background: #1c1c26; }
+  .feature-card:hover::before { transform: scaleX(1); }
+
+  .feature-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 64px;
+    color: #1e1e28;
+    line-height: 1;
+    margin-bottom: 16px;
+    transition: color 0.3s;
+  }
+  .feature-card:hover .feature-number { color: #252530; }
+
+  .feature-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 12px;
+  }
+
+  .feature-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.8;
+  }
+
+  /* ── Code Block ── */
+  .code-section {
+    margin-top: 60px;
+  }
+
+  .terminal {
+    background: #0d0d14;
+    border: 1px solid #2a2a38;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .terminal-bar {
+    background: #1a1a24;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #2a2a38;
+  }
+
+  .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .dot-red { background: #aa4040; }
+  .dot-yellow { background: #aa8840; }
+  .dot-green { background: #408850; }
+
+  .terminal-title {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.2em;
+    margin-left: 8px;
+  }
+
+  .terminal-body {
+    padding: 28px 28px;
+    font-size: 13px;
+    line-height: 2;
+  }
+
+  .t-comment { color: #404055; }
+  .t-prompt { color: var(--gold); }
+  .t-cmd { color: var(--cream); }
+  .t-output { color: var(--green); }
+  .t-flag { color: #7888cc; }
+
+  /* ── Format Box ── */
+  .format-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 60px;
+  }
+
+  @media (max-width: 700px) {
+    .format-grid { grid-template-columns: 1fr; }
+    main { padding: 0 30px; }
+  }
+
+  .format-panel {
+    border: 1px solid #2a2a38;
+    padding: 32px;
+  }
+
+  .format-panel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    margin-bottom: 20px;
+  }
+
+  .format-panel pre {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.8;
+    white-space: pre-wrap;
+  }
+
+  .format-panel pre .hl { color: var(--cream); }
+  .format-panel pre .gold { color: var(--gold); }
+  .format-panel pre .grn { color: var(--green); }
+
+  /* ── Workflow ── */
+  .workflow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin-top: 60px;
+    position: relative;
+  }
+
+  .workflow::before {
+    content: '';
+    position: absolute;
+    top: 36px;
+    left: 36px;
+    right: 36px;
+    height: 1px;
+    background: linear-gradient(to right, var(--gold) 0%, var(--gold) 100%);
+    opacity: 0.2;
+  }
+
+  .workflow-step {
+    flex: 1;
+    min-width: 160px;
+    text-align: center;
+    padding: 0 24px;
+    position: relative;
+  }
+
+  .workflow-icon {
+    width: 72px; height: 72px;
+    border: 1.5px solid var(--gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    color: var(--gold);
+    background: var(--dark);
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s;
+  }
+
+  .workflow-step:hover .workflow-icon {
+    background: rgba(200,160,82,0.1);
+    box-shadow: 0 0 24px rgba(200,160,82,0.2);
+  }
+
+  .workflow-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    color: var(--cream);
+    margin-bottom: 8px;
+  }
+
+  .workflow-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid #1e1e28;
+    padding: 60px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .footer-brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .footer-meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    line-height: 2;
+    text-align: right;
+  }
+
+  .footer-meta a {
+    color: var(--text-dim);
+    text-decoration: none;
+  }
+  .footer-meta a:hover { color: var(--gold); }
+
+  /* ── Animations ── */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Scroll reveal ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16,1,0.3,1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── Scene heading decorators ── */
+  .scene-heading {
+    display: inline-block;
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--text-dim);
+    border: 1px solid #2a2a38;
+    padding: 6px 16px;
+    margin-bottom: 16px;
+  }
+
+  /* Vertical text accent */
+  .vertical-text {
+    position: fixed;
+    left: 56px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    color: #2a2a38;
+    z-index: 102;
+    white-space: nowrap;
+  }
+
+  .badge-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 28px;
+    animation: fadeIn 1s ease 1.3s both;
+  }
+
+  .badge {
+    font-family: 'Courier Prime', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    padding: 5px 12px;
+    border: 1px solid #2a2a38;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="filmstrip-right"></div>
+
+<!-- Filmstrip holes left -->
+<div class="filmstrip-holes-left" id="holesLeft"></div>
+<div class="filmstrip-holes-right" id="holesRight"></div>
+
+<span class="vertical-text">DREHBUCH-STORYBOARD-GENERATOR · KSA</span>
+
+<main>
+
+  <!-- ── HERO ── -->
+  <section class="hero" style="border:none; padding-top: 120px;">
+    <div class="scene-label">INT. TERMINAL — NACHT</div>
+    <div class="hero-eyebrow">Open Source Tool</div>
+    <h1>
+      <span class="hero-title">Drehbuch</span>
+      <span class="hero-arrow">↓</span>
+      <span class="hero-title2">Storyboard MP4</span>
+    </h1>
+    <div class="hero-divider"></div>
+    <p class="hero-tagline">
+      Konvertiert jedes Drehbuch automatisch in ein animiertes Storyboard-Video.
+      Inklusive KI-Prompts für Midjourney, Stable Diffusion und DALL·E.
+      Komplett lokal. Keine API nötig.
+    </p>
+    <div class="badge-row">
+      <span class="badge">🐍 Python 3.10+</span>
+      <span class="badge">🎬 MoviePy</span>
+      <span class="badge">🖼 Pillow</span>
+      <span class="badge">✅ Keine API</span>
+      <span class="badge">📄 MIT Lizenz</span>
+    </div>
+    <div class="hero-divider"></div>
+    <div class="cta-row">
+      <a href="https://github.com/patrickmfischer/drehbuch-storyboard" class="btn btn-primary">
+        ↓ GitHub Repository
+      </a>
+      <a href="#verwendung" class="btn btn-secondary">
+        → Anleitung
+      </a>
+    </div>
+  </section>
+
+  <!-- ── FEATURES ── -->
+  <section>
+    <div class="reveal">
+      <div class="section-label">Was es kann</div>
+      <h2 class="section-title">Vollautomatisch.<br><em>Null Konfiguration.</em></h2>
+    </div>
+    <div class="features-grid reveal">
+      <div class="feature-card">
+        <div class="feature-number">01</div>
+        <div class="feature-title">Drehbuch parsen</div>
+        <p class="feature-desc">Erkennt automatisch INT./EXT.-Szenenkopf, Regieanweisungen, Figurennamen und Dialoge im Standard-Screenwriting-Format.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-number">02</div>
+        <div class="feature-title">Image Prompts</div>
+        <p class="feature-desc">Generiert für jede Szene einen optimierten englischen Prompt — direkt verwendbar in Midjourney, Stable Diffusion oder DALL·E.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-number">03</div>
+        <div class="feature-title">Storyboard-Karten</div>
+        <p class="feature-desc">Erstellt visuelle 1280×720 Karten mit Szenennummer, Beschreibung, Dialog und Prompt. Mit Platzhalter für das KI-Bild.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-number">04</div>
+        <div class="feature-title">MP4-Export</div>
+        <p class="feature-desc">Alle Szenen werden zu einem abspielbaren MP4-Video zusammengefügt. Einstellbare Anzeigedauer pro Szene.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── WORKFLOW ── -->
+  <section>
+    <div class="reveal">
+      <div class="section-label">Workflow</div>
+      <h2 class="section-title">In 4 Schritten<br><em>zum Film.</em></h2>
+    </div>
+    <div class="workflow reveal">
+      <div class="workflow-step">
+        <div class="workflow-icon">①</div>
+        <div class="workflow-label">Drehbuch schreiben</div>
+        <div class="workflow-sub">Normales .txt-File im Standard-Format</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-icon">②</div>
+        <div class="workflow-label">Programm ausführen</div>
+        <div class="workflow-sub">Ein Befehl im Terminal</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-icon">③</div>
+        <div class="workflow-label">Prompts nutzen</div>
+        <div class="workflow-sub">Bilder mit KI-Tools generieren</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-icon">④</div>
+        <div class="workflow-label">Film schneiden</div>
+        <div class="workflow-sub">Bilder ersetzen — fertig!</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── VERWENDUNG ── -->
+  <section id="verwendung">
+    <div class="reveal">
+      <div class="section-label">Installation & Verwendung</div>
+      <h2 class="section-title">Drei Befehle.<br><em>Läuft sofort.</em></h2>
+    </div>
+
+    <div class="code-section reveal">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+          <span class="terminal-title">TERMINAL — bash</span>
+        </div>
+        <div class="terminal-body">
+          <div><span class="t-comment"># 1. Repository klonen</span></div>
+          <div><span class="t-prompt">$ </span><span class="t-cmd">git clone https://github.com/patrickmfischer/drehbuch-storyboard.git</span></div>
+          <div><span class="t-prompt">$ </span><span class="t-cmd">cd drehbuch-storyboard</span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-comment"># 2. Abhängigkeiten installieren</span></div>
+          <div><span class="t-prompt">$ </span><span class="t-cmd">pip install <span class="t-flag">-r</span> requirements.txt</span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-comment"># 3a. Demo starten (Mephisto-Beispiel)</span></div>
+          <div><span class="t-prompt">$ </span><span class="t-cmd">python3 drehbuch_zu_storyboard.py <span class="t-flag">--demo</span></span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-comment"># 3b. Eigenes Drehbuch verarbeiten</span></div>
+          <div><span class="t-prompt">$ </span><span class="t-cmd">python3 drehbuch_zu_storyboard.py mein_film.txt</span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-comment"># Mit Optionen (10s pro Szene, eigener Dateiname)</span></div>
+          <div><span class="t-prompt">$ </span><span class="t-cmd">python3 drehbuch_zu_storyboard.py mein_film.txt <span class="t-flag">-d</span> 10 <span class="t-flag">-o</span> film.mp4</span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-output">✅  MP4 gespeichert: film.mp4</span></div>
+          <div><span class="t-output">✨  Fertig! 6 Szenen · ~60 Sekunden</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FORMAT ── -->
+  <section>
+    <div class="reveal">
+      <div class="section-label">Drehbuch-Format</div>
+      <h2 class="section-title">Standard.<br><em>Einfach.</em></h2>
+    </div>
+
+    <div class="format-grid reveal">
+      <div class="format-panel">
+        <div class="format-panel-title">Eingabe: drehbuch.txt</div>
+        <pre><span class="hl">INT. BERLINER THEATER - NACHT</span>
+
+Die Bühne liegt im Halbdunkel.
+Scheinwerfer beleuchten die Kulissen.
+HENDRIK tritt auf als Mephisto.
+
+<span class="gold">        HENDRIK</span>
+  Ich bin der Geist, der stets verneint!
+
+<span class="gold">        NICOLETTA</span>
+  Du bist... ein anderer Mensch.
+
+<span class="hl">EXT. BERLINER STRASSE - MORGEN</span>
+
+Herbstblätter wehen über das Pflaster.
+HENDRIK geht allein durch die Stadt.</pre>
+      </div>
+      <div class="format-panel">
+        <div class="format-panel-title">Ausgabe: Image Prompt</div>
+        <pre><span class="grn">Scene at berliner theater,
+night, moonlight,
+artificial lights,
+indoor lighting,
+dark, moody atmosphere,
+featuring characters: HENDRIK,
+NICOLETTA,
+cinematic film still,
+35mm photography,
+shallow depth of field,
+professional cinematography</span>
+
+<span class="t-comment">→ Für Midjourney: ergänze --ar 16:9 --v 6</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer class="reveal">
+    <div class="footer-brand">Drehbuch → Storyboard</div>
+    <div class="footer-meta">
+      MIT Lizenz · Open Source<br>
+      Entwickelt an der <a href="https://www.ksa.sz.ch">Kantonsschule Ausserschwyz</a><br>
+      <a href="https://github.com/patrickmfischer/drehbuch-storyboard">github.com/patrickmfischer/drehbuch-storyboard</a>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+  // Generate filmstrip holes
+  function fillHoles(id) {
+    const el = document.getElementById(id);
+    const count = Math.ceil(window.innerHeight / 33) + 5;
+    el.innerHTML = Array(count).fill('<div class="hole"></div>').join('');
+  }
+  fillHoles('holesLeft');
+  fillHoles('holesRight');
+  window.addEventListener('resize', () => {
+    fillHoles('holesLeft');
+    fillHoles('holesRight');
+  });
+
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
