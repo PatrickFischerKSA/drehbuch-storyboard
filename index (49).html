@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drehbuch → Film</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#c8a052;--gold2:#e8c07a;
+  --dark:#07070e;--panel:#0f0f18;--panel2:#141420;
+  --border:#202030;--text:#ccc4b4;--dim:#52504a;
+  --green:#3d8a55;--green2:#5ab870;--cream:#ede5d5;
+  --blue:#3a5a90;--red:#883030;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--dark);color:var(--text);font-family:'Courier Prime',monospace;min-height:100vh;}
+
+/* ══ HEADER ══ */
+header{
+  border-bottom:1px solid var(--border);
+  padding:14px 28px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;background:rgba(7,7,14,0.97);backdrop-filter:blur(8px);z-index:200;
+}
+.logo{font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:var(--gold);letter-spacing:0.02em;}
+.steps{display:flex;border:1px solid var(--border);}
+.step{padding:7px 16px;font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--dim);border-right:1px solid var(--border);transition:all 0.3s;white-space:nowrap;}
+.step:last-child{border-right:none;}
+.step.active{color:var(--gold);background:rgba(200,160,82,0.07);}
+.step.done{color:var(--green2);}
+
+/* ══ BUTTONS ══ */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border:none;transition:all 0.2s;white-space:nowrap;}
+.btn-gold{background:var(--gold);color:var(--dark);font-weight:700;}
+.btn-gold:hover{background:var(--gold2);transform:translateY(-1px);}
+.btn-gold:disabled{background:#2a2a2a;color:#444;cursor:not-allowed;transform:none;}
+.btn-outline{background:transparent;color:var(--gold);border:1.5px solid var(--gold);}
+.btn-outline:hover{background:rgba(200,160,82,0.07);}
+.btn-green{background:var(--green);color:#fff;font-weight:700;}
+.btn-green:hover{background:#4a9a65;transform:translateY(-1px);}
+.btn-green:disabled{background:#2a2a2a;color:#444;cursor:not-allowed;transform:none;}
+.btn-red{background:var(--red);color:#fff;}
+.btn-red:hover{background:#aa4040;}
+.btn-sm{padding:5px 12px;font-size:10px;}
+
+/* ══ PAGES ══ */
+.page{display:none;max-width:1200px;margin:0 auto;padding:28px 20px 100px;}
+.page.active{display:block;}
+
+/* ══════════════════════════════
+   PAGE 1 – UPLOAD
+══════════════════════════════ */
+.up-hero{text-align:center;padding:44px 0 52px;}
+.up-title{font-family:'Playfair Display',serif;font-size:clamp(46px,7vw,82px);font-weight:700;color:var(--cream);line-height:1.02;margin-bottom:10px;}
+.up-title em{font-style:italic;color:var(--gold);}
+.up-sub{color:var(--dim);font-size:14px;line-height:2;margin-bottom:44px;}
+
+.drop{border:2px dashed var(--border);padding:52px 36px;cursor:pointer;transition:all 0.3s;position:relative;max-width:520px;margin:0 auto;}
+.drop:hover,.drop.over{border-color:var(--gold);background:rgba(200,160,82,0.04);}
+.drop-icon{font-size:40px;display:block;margin-bottom:14px;}
+.drop-lbl{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:0.3em;color:var(--gold);margin-bottom:7px;}
+.drop-sub{font-size:12px;color:var(--dim);}
+#file-in{position:absolute;inset:0;opacity:0;cursor:pointer;}
+
+.or-div{display:flex;align-items:center;gap:14px;margin:22px auto;color:var(--dim);font-size:11px;max-width:520px;}
+.or-div::before,.or-div::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.fmt{max-width:520px;margin:30px auto 0;border:1px solid var(--border);padding:18px;text-align:left;}
+.fmt-t{font-size:10px;letter-spacing:0.35em;color:var(--gold);margin-bottom:10px;}
+.fmt pre{font-size:12px;color:var(--dim);line-height:1.9;white-space:pre-wrap;}
+.fmt pre .hl{color:var(--cream);}
+.fmt pre .go{color:var(--gold);}
+
+/* ══════════════════════════════
+   PAGE 2 – SCENES EDITOR
+══════════════════════════════ */
+.p2-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:28px;}
+.p2-title{font-family:'Playfair Display',serif;font-size:26px;font-style:italic;color:var(--cream);}
+.p2-meta{font-size:12px;color:var(--dim);margin-top:5px;line-height:1.9;}
+
+/* Global timing bar */
+.timing-bar{
+  background:var(--panel);border:1px solid var(--border);
+  padding:14px 20px;margin-bottom:22px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.tb-label{font-size:10px;letter-spacing:0.3em;color:var(--dim);text-transform:uppercase;white-space:nowrap;}
+.tb-input{width:58px;padding:5px 8px;background:var(--dark);border:1px solid var(--border);color:var(--text);font-family:'Courier Prime',monospace;font-size:13px;text-align:center;}
+.tb-input:focus{outline:none;border-color:var(--gold);}
+.tb-sep{color:var(--border);font-size:18px;}
+.tb-note{font-size:11px;color:var(--dim);flex:1;}
+
+/* Progress */
+.prog-wrap{height:2px;background:var(--border);margin-bottom:24px;}
+.prog-bar{height:2px;background:var(--gold);transition:width 0.4s ease;}
+
+/* Scene card — new design */
+.sc-card{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  border:1px solid var(--border);
+  margin-bottom:12px;
+  transition:border-color 0.25s;
+  background:var(--panel);
+}
+.sc-card:hover{border-color:rgba(200,160,82,0.2);}
+.sc-card.has-media{border-color:rgba(61,138,85,0.5);}
+.sc-card.has-video{border-color:rgba(58,90,144,0.6);}
+
+/* Number strip */
+.sc-num{
+  width:48px;background:var(--panel2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:12px 4px;gap:6px;
+}
+.sc-num-n{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);line-height:1;}
+.sc-num-total{font-size:9px;color:var(--dim);}
+.sc-num-type{font-size:9px;letter-spacing:0.15em;color:var(--dim);writing-mode:vertical-lr;text-transform:uppercase;}
+.sc-num-type.img{color:var(--green2);}
+.sc-num-type.vid{color:#6a8ad0;}
+
+/* Card body */
+.sc-body{display:grid;grid-template-columns:180px 1fr 200px;}
+
+/* Media slot */
+.media-slot{
+  min-height:140px;position:relative;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-right:1px solid var(--border);overflow:hidden;background:#09090f;
+  transition:background 0.2s;
+}
+.media-slot:hover{background:#0d0d16;}
+.media-slot img,.media-slot video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
+.media-slot.has-img img,.media-slot.has-vid video{display:block;}
+.media-slot.has-img .slot-empty,.media-slot.has-vid .slot-empty{display:none;}
+.slot-empty{text-align:center;padding:12px;pointer-events:none;}
+.slot-icon{font-size:24px;margin-bottom:8px;display:block;}
+.slot-lbl{font-size:9px;letter-spacing:0.2em;color:var(--dim);line-height:1.7;}
+.slot-hover{position:absolute;inset:0;background:rgba(0,0,0,0.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;opacity:0;transition:opacity 0.2s;pointer-events:none;}
+.media-slot:hover .slot-hover{opacity:1;}
+.slot-hover span{font-size:9px;letter-spacing:0.2em;color:#fff;}
+
+/* Media type tabs */
+.media-tabs{
+  position:absolute;top:6px;left:0;right:0;
+  display:flex;justify-content:center;gap:4px;
+  z-index:10;pointer-events:all;
+}
+.media-tab{
+  padding:3px 8px;font-family:'Courier Prime',monospace;font-size:9px;letter-spacing:0.15em;
+  text-transform:uppercase;cursor:pointer;border:1px solid var(--border);
+  background:rgba(7,7,14,0.85);color:var(--dim);transition:all 0.2s;
+}
+.media-tab.active-img{background:rgba(61,138,85,0.3);border-color:var(--green2);color:var(--green2);}
+.media-tab.active-vid{background:rgba(58,90,144,0.3);border-color:#6a8ad0;color:#6a8ad0;}
+.media-tab:hover{border-color:var(--gold);color:var(--gold);}
+
+/* Hidden file inputs */
+.file-img,.file-vid{position:absolute;opacity:0;width:0;height:0;}
+
+/* Video badge */
+.vid-badge{
+  position:absolute;bottom:4px;left:4px;
+  background:rgba(58,90,144,0.85);color:#aabfee;
+  font-size:9px;letter-spacing:0.15em;padding:2px 6px;
+  text-transform:uppercase;
+}
+
+/* Scene info */
+.sc-info{padding:14px 16px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:7px;}
+.sc-kopf{font-size:12px;font-weight:700;color:var(--cream);line-height:1.4;}
+.sc-sec{font-size:9px;letter-spacing:0.2em;color:var(--dim);text-transform:uppercase;}
+.sc-regie{font-size:11px;color:var(--text);line-height:1.7;}
+.sc-dlg{border-left:2px solid #2a1f1f;padding-left:8px;margin-top:4px;}
+.sc-fig{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.1em;}
+.sc-txt{font-size:11px;color:#b89060;font-style:italic;line-height:1.5;}
+
+/* Controls */
+.sc-ctrl{padding:14px;background:#0a0a12;display:flex;flex-direction:column;gap:8px;}
+.ctrl-lbl{font-size:9px;letter-spacing:0.28em;color:var(--dim);text-transform:uppercase;}
+
+/* Timing control */
+.timing-row{display:flex;align-items:center;gap:6px;}
+.dur-input{width:52px;padding:4px 6px;background:var(--dark);border:1px solid var(--border);color:var(--text);font-family:'Courier Prime',monospace;font-size:13px;text-align:center;}
+.dur-input:focus{outline:none;border-color:var(--gold);}
+.dur-unit{font-size:10px;color:var(--dim);}
+
+/* Transition selector */
+.trans-sel{
+  width:100%;padding:5px 8px;background:var(--dark);border:1px solid var(--border);
+  color:var(--text);font-family:'Courier Prime',monospace;font-size:11px;
+}
+.trans-sel:focus{outline:none;border-color:var(--gold);}
+
+/* Prompt mini */
+.prompt-mini{font-size:10px;color:#4a7a55;line-height:1.6;flex:1;overflow:hidden;}
+.copy-btn-mini{background:transparent;color:#4a7a55;border:1px solid #253525;padding:4px 8px;font-family:'Courier Prime',monospace;font-size:9px;letter-spacing:0.1em;cursor:pointer;text-transform:uppercase;transition:all 0.2s;}
+.copy-btn-mini:hover{background:rgba(61,138,85,0.12);color:var(--green2);}
+.copy-btn-mini.done{color:var(--gold);border-color:var(--gold);}
+
+/* Clear btn */
+.clear-btn{background:transparent;color:#553333;border:1px solid #332222;padding:4px 8px;font-family:'Courier Prime',monospace;font-size:9px;letter-spacing:0.1em;cursor:pointer;text-transform:uppercase;transition:all 0.2s;}
+.clear-btn:hover{background:rgba(136,48,48,0.15);color:#cc6666;}
+
+/* ══════════════════════════════
+   PAGE 3 – EXPORT
+══════════════════════════════ */
+.exp-wrap{max-width:640px;margin:0 auto;padding:40px 0;}
+.exp-title{font-family:'Playfair Display',serif;font-size:50px;font-weight:700;color:var(--cream);line-height:1.05;margin-bottom:10px;}
+.exp-title em{font-style:italic;color:var(--gold);}
+.exp-sub{color:var(--dim);font-size:14px;line-height:1.9;margin-bottom:32px;}
+
+.exp-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin-bottom:28px;}
+.eg{background:var(--panel);padding:18px;}
+.eg-lbl{font-size:10px;letter-spacing:0.3em;color:var(--dim);text-transform:uppercase;margin-bottom:7px;}
+.eg select,.eg input{width:100%;padding:7px 10px;background:var(--dark);border:1px solid var(--border);color:var(--text);font-family:'Courier Prime',monospace;font-size:12px;}
+
+/* Summary */
+.exp-summary{
+  border:1px solid var(--border);padding:18px;margin-bottom:24px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;
+}
+.sum-val{font-family:'Playfair Display',serif;font-size:28px;color:var(--gold);display:block;}
+.sum-lbl{font-size:10px;letter-spacing:0.25em;color:var(--dim);}
+
+/* Render progress */
+.rp{display:none;border:1px solid var(--border);padding:22px;margin-top:20px;}
+.rp-lbl{font-size:10px;letter-spacing:0.3em;color:var(--gold);margin-bottom:10px;}
+.rp-wrap{height:3px;background:var(--border);border-radius:2px;margin-bottom:10px;}
+.rp-bar{height:3px;background:var(--gold);border-radius:2px;width:0%;transition:width 0.2s;}
+.rp-stage{font-size:11px;color:var(--dim);}
+
+/* ══ TOAST ══ */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--gold);color:var(--dark);font-family:'Courier Prime',monospace;font-size:13px;font-weight:700;padding:10px 20px;opacity:0;transform:translateY(8px);transition:all 0.3s;pointer-events:none;z-index:9999;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.err{background:#cc4444;color:#fff;}
+
+canvas#rc{display:none;}
+
+/* ══ RESPONSIVE ══ */
+@media(max-width:700px){
+  .sc-body{grid-template-columns:1fr;}
+  .media-slot{min-height:180px;border-right:none;border-bottom:1px solid var(--border);}
+  .sc-info{border-right:none;border-bottom:1px solid var(--border);}
+  .exp-grid{grid-template-columns:1fr;}
+  .exp-summary{grid-template-columns:1fr 1fr;}
+  header{flex-wrap:wrap;gap:8px;}
+  .steps{display:none;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Drehbuch → Film</div>
+  <div class="steps">
+    <div class="step active" id="step1">① Drehbuch</div>
+    <div class="step" id="step2">② Szenen &amp; Medien</div>
+    <div class="step" id="step3">③ Export</div>
+  </div>
+</header>
+
+<!-- ════════════ PAGE 1 ════════════ -->
+<div class="page active" id="page1">
+  <div class="up-hero">
+    <h1 class="up-title">Drehbuch<br><em>laden.</em></h1>
+    <p class="up-sub">
+      Lade ein Drehbuch als .txt-Datei hoch.<br>
+      Pro Szene kannst du ein <strong style="color:var(--green2)">Bild</strong> oder einen kurzen
+      <strong style="color:#6a8ad0">Videoclip</strong> (z.B. aus Canva) hinzufügen.<br>
+      Timing, Übergänge und Export – alles im Browser.
+    </p>
+
+    <div class="drop" id="drop-area">
+      <input type="file" id="file-in" accept=".txt">
+      <span class="drop-icon">📄</span>
+      <div class="drop-lbl">Drehbuch hier ablegen</div>
+      <div class="drop-sub">oder klicken · .txt-Datei</div>
+    </div>
+
+    <div class="or-div">oder</div>
+    <button class="btn btn-outline" onclick="loadDemo()">✦ Demo laden (Mephisto)</button>
+
+    <div class="fmt">
+      <div class="fmt-t">📄 Drehbuch-Format</div>
+      <pre><span class="hl">INT. WOHNZIMMER - NACHT</span>
+
+Beschreibung der Szene, Figuren, Atmosphäre...
+
+<span class="go">        FIGUR A</span>
+  Dialog hier...
+
+<span class="hl">EXT. STRASSE - TAG</span>
+Nächste Szene...</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ PAGE 2 ════════════ -->
+<div class="page" id="page2">
+
+  <div class="p2-top">
+    <div>
+      <div class="p2-title" id="p2-film-title">Storyboard</div>
+      <div class="p2-meta" id="p2-meta"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;">
+      <button class="btn btn-outline btn-sm" onclick="goPage(1)">← Zurück</button>
+      <button class="btn btn-gold" onclick="goPage(3)">Weiter → Export ›</button>
+    </div>
+  </div>
+
+  <!-- Global timing -->
+  <div class="timing-bar">
+    <span class="tb-label">⏱ Standard-Timing</span>
+    <span style="font-size:11px;color:var(--dim);">Bilder:</span>
+    <input type="number" class="tb-input" id="glob-img-dur" value="6" min="1" max="60">
+    <span class="dur-unit">sek</span>
+    <div class="tb-sep">|</div>
+    <span style="font-size:11px;color:var(--dim);">Übergang:</span>
+    <input type="number" class="tb-input" id="glob-fade" value="1.0" min="0" max="3" step="0.5">
+    <span class="dur-unit">sek</span>
+    <div class="tb-sep">|</div>
+    <button class="btn btn-outline btn-sm" onclick="applyGlobalTiming()">Auf alle anwenden</button>
+    <span class="tb-note">Videoclips verwenden ihre eigene Länge.</span>
+  </div>
+
+  <div class="prog-wrap"><div class="prog-bar" id="img-prog"></div></div>
+  <div id="scenes-container"></div>
+
+  <div style="text-align:center;margin-top:28px;">
+    <button class="btn btn-gold" style="font-size:13px;padding:12px 28px;" onclick="goPage(3)">
+      Weiter → Export ›
+    </button>
+  </div>
+</div>
+
+<!-- ════════════ PAGE 3 ════════════ -->
+<div class="page" id="page3">
+  <div class="exp-wrap">
+    <h2 class="exp-title">Film<br><em>exportieren.</em></h2>
+    <p class="exp-sub" id="exp-sub">Alle Szenen werden zu einem Video zusammengefügt.</p>
+
+    <!-- Summary -->
+    <div class="exp-summary">
+      <div><span class="sum-val" id="sum-scenes">0</span><span class="sum-lbl">Szenen</span></div>
+      <div><span class="sum-val" id="sum-media">0</span><span class="sum-lbl">Mit Medien</span></div>
+      <div><span class="sum-val" id="sum-dur">0s</span><span class="sum-lbl">Geschätzte Länge</span></div>
+    </div>
+
+    <div class="exp-grid">
+      <div class="eg">
+        <div class="eg-lbl">Auflösung</div>
+        <select id="exp-res">
+          <option value="1280x720">1280 × 720 · HD</option>
+          <option value="1920x1080">1920 × 1080 · Full HD</option>
+          <option value="854x480">854 × 480 · SD</option>
+        </select>
+      </div>
+      <div class="eg">
+        <div class="eg-lbl">Szenen ohne Medien</div>
+        <select id="exp-missing">
+          <option value="black">Schwarzes Bild</option>
+          <option value="placeholder">Szenentext anzeigen</option>
+          <option value="skip">Überspringen</option>
+        </select>
+      </div>
+      <div class="eg">
+        <div class="eg-lbl">Text-Overlay</div>
+        <select id="exp-overlay">
+          <option value="none">Kein Text</option>
+          <option value="kopf">Nur Szenenkopf (dezent)</option>
+          <option value="full">Szenenkopf + Dialog</option>
+        </select>
+      </div>
+      <div class="eg">
+        <div class="eg-lbl">Übergangs-Typ</div>
+        <select id="exp-trans">
+          <option value="fade">Crossfade (sanft)</option>
+          <option value="black">Fade über Schwarz</option>
+          <option value="cut">Harter Schnitt</option>
+        </select>
+      </div>
+      <div class="eg" style="grid-column:1/-1;background:rgba(200,160,82,0.05);border-top:1px solid rgba(200,160,82,0.2);">
+        <div class="eg-lbl" style="color:var(--gold);">🎬 Zwischentitel (Dialog-Karten)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px;">
+          <div>
+            <div style="font-size:10px;color:var(--dim);letter-spacing:0.2em;margin-bottom:5px;">STIL</div>
+            <select id="it-style">
+              <option value="classic">Klassisch (schwarz, gold)</option>
+              <option value="white">Hell (weiß, schwarz)</option>
+              <option value="film">Filmkorn (dunkel, vergilbt)</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--dim);letter-spacing:0.2em;margin-bottom:5px;">DAUER PRO KARTE</div>
+            <input type="number" id="it-dur" value="3" min="1" max="10" step="0.5">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--dim);letter-spacing:0.2em;margin-bottom:5px;">ANZEIGEN BEI</div>
+            <select id="it-when">
+              <option value="all">Allen Szenen mit Dialog</option>
+              <option value="none">Deaktiviert</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+      <button class="btn btn-green" id="exp-btn" onclick="startExport()" style="font-size:14px;padding:13px 36px;">
+        🎬 Film exportieren
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="goPage(2)">← Szenen bearbeiten</button>
+    </div>
+
+    <div class="rp" id="rp">
+      <div class="rp-lbl">RENDERING</div>
+      <div class="rp-wrap"><div class="rp-bar" id="rp-bar"></div></div>
+      <div class="rp-stage" id="rp-stage">Vorbereitung...</div>
+    </div>
+  </div>
+</div>
+
+<canvas id="rc"></canvas>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════════════════
+   STATE
+════════════════════════════════════ */
+let scenes    = [];
+let filmTitle = 'FILM';
+// per scene: { type: 'none'|'image'|'video', dataURL, duration, fade, prompt }
+let sData = [];
+
+/* ════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════ */
+function goPage(n) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page' + n).classList.add('active');
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active','done');
+    if (i+1 < n) s.classList.add('done');
+    if (i+1 === n) s.classList.add('active');
+  });
+  if (n === 3) updateExpPage();
+  window.scrollTo(0,0);
+}
+
+/* ════════════════════════════════════
+   PARSER
+════════════════════════════════════ */
+function parse(text) {
+  const lines = text.split('\n');
+  const result = [];
+  let cur = null, mode = null, lastFig = '';
+  const HEAD = /^(INT\.|EXT\.|INT\/EXT\.|INNEN|AUSSEN|I\/A)\s+/i;
+  const FIG  = /^[ \t]{2,}([A-ZÄÖÜ][A-ZÄÖÜ\s\-\.]{1,30})$/;
+  const DLG  = /^[ \t]{4,}(.+)$/;
+  for (const line of lines) {
+    if (HEAD.test(line.trim())) {
+      if (cur) result.push(cur);
+      cur = { nr: result.length+1, kopf: line.trim(), regie: [], dialoge: [] };
+      mode = null; continue;
+    }
+    if (!cur) continue;
+    if (/^\s*$/.test(line)) { mode = null; continue; }
+    const mf = FIG.exec(line);
+    if (mf && mode !== 'dialog') { lastFig = mf[1].trim(); mode = 'figur'; continue; }
+    const md = DLG.exec(line);
+    if (md && mode === 'figur') { cur.dialoge.push({figur:lastFig,text:md[1]}); mode='dialog'; continue; }
+    if (md && mode === 'dialog') { cur.dialoge[cur.dialoge.length-1].text+=' '+md[1]; continue; }
+    if (line.trim()) { cur.regie.push(line.trim()); mode='regie'; }
+  }
+  if (cur) result.push(cur);
+  return result;
+}
+
+/* ════════════════════════════════════
+   PROMPT GENERATOR
+════════════════════════════════════ */
+function makePrompt(s) {
+  const k = s.kopf.toLowerCase();
+  const rest = s.kopf.replace(/INT\.|EXT\.|INT\/EXT\.|INNEN|AUSSEN/gi,'').trim();
+  const parts = rest.split('-').map(x=>x.trim());
+  const ort = (parts[0]||'location').toLowerCase();
+  const zeit = (parts[1]||'').toLowerCase();
+  const licht = /int|innen/.test(k) ? 'indoor cinematic lighting' : 'natural outdoor lighting';
+  const ztMap={nacht:'night, moonlight, dark atmosphere',tag:'bright daylight, sunlight',morgen:'golden hour, soft morning mist',abend:'sunset, warm orange glow',dämmerung:'dusk, blue hour'};
+  let tz=''; for(const[a,b] of Object.entries(ztMap)){if(zeit.includes(a)){tz=b;break;}}
+  const reg = s.regie.slice(0,3).join(' ');
+  const stMap={dunkel:'dark moody',hell:'bright cheerful',einsam:'lonely isolated',bedrohlich:'threatening tense',ruhig:'calm peaceful',leer:'empty desolate'};
+  let st=''; for(const[a,b] of Object.entries(stMap)){if(reg.toLowerCase().includes(a)){st=b;break;}}
+  return [
+    `Cinematic film still, ${ort}`, tz, licht, st,
+    reg.slice(0,80),
+    '35mm photography, shallow depth of field, 1930s aesthetic, dramatic cinematic lighting'
+  ].filter(Boolean).join(', ');
+}
+
+/* ════════════════════════════════════
+   RENDER SCENES (PAGE 2)
+════════════════════════════════════ */
+function renderScenes() {
+  const c = document.getElementById('scenes-container');
+  c.innerHTML = '';
+
+  scenes.forEach((s, i) => {
+    const pr = makePrompt(s);
+    sData[i].prompt = pr;
+    const regie = s.regie.join(' ') || '—';
+    const dlgHtml = s.dialoge.slice(0,2).map(d=>
+      `<div class="sc-fig">${esc(d.figur)}</div>
+       <div class="sc-txt">${esc(d.text.slice(0,70))}${d.text.length>70?'…':''}</div>`
+    ).join('');
+
+    const sd = sData[i];
+    const hasImg = sd.type === 'image';
+    const hasVid = sd.type === 'video';
+    const hasMedia = hasImg || hasVid;
+
+    const card = document.createElement('div');
+    card.className = `sc-card${hasImg?' has-media':''}${hasVid?' has-video':''}`;
+    card.id = 'card-'+i;
+
+    card.innerHTML = `
+      <!-- Number strip -->
+      <div class="sc-num">
+        <div class="sc-num-n">${String(s.nr).padStart(2,'0')}</div>
+        <div class="sc-num-total">/ ${scenes.length}</div>
+        <div class="sc-num-type ${sd.type}" id="type-badge-${i}">${sd.type==='none'?'—':sd.type==='image'?'IMG':'VID'}</div>
+      </div>
+
+      <!-- Body -->
+      <div class="sc-body">
+
+        <!-- Media slot -->
+        <div class="media-slot ${hasImg?'has-img':''} ${hasVid?'has-vid':''}" id="slot-${i}">
+          <input type="file" class="file-img" id="fi-${i}" accept="image/*" onchange="handleImg(${i},this)">
+          <input type="file" class="file-vid" id="fv-${i}" accept="video/*" onchange="handleVid(${i},this)">
+
+          <img id="thumb-${i}" src="${hasImg?sd.dataURL:''}">
+          <video id="videl-${i}" ${hasVid?`src="${sd.dataURL}"`:''}
+                 muted loop playsinline preload="metadata"
+                 style="${hasVid?'':'display:none'}"></video>
+
+          <div class="slot-empty">
+            <span class="slot-icon">🎞</span>
+            <div class="slot-lbl">Bild hochladen<br>oder Videoclip<br>(Canva-Export)</div>
+          </div>
+
+          <div class="media-tabs">
+            <div class="media-tab ${hasImg?'active-img':''}" onclick="triggerImg(${i})">🖼 Bild</div>
+            <div class="media-tab ${hasVid?'active-vid':''}" onclick="triggerVid(${i})">🎬 Video</div>
+          </div>
+
+          <div class="slot-hover">
+            <span>BILD</span><span style="font-size:11px;">·</span><span>ERSETZEN</span>
+          </div>
+          ${hasVid ? `<div class="vid-badge">VIDEO</div>` : ''}
+        </div>
+
+        <!-- Scene info -->
+        <div class="sc-info">
+          <div class="sc-kopf">${esc(s.kopf)}</div>
+          ${regie !== '—' ? `<div>
+            <div class="sc-sec">Szene</div>
+            <div class="sc-regie">${esc(regie.slice(0,160))}${regie.length>160?'…':''}</div>
+          </div>` : ''}
+          ${s.dialoge.length ? `<div class="sc-dlg">${dlgHtml}</div>` : ''}
+        </div>
+
+        <!-- Controls -->
+        <div class="sc-ctrl">
+          <div class="ctrl-lbl">⏱ Dauer</div>
+          <div class="timing-row">
+            <input type="number" class="dur-input" id="dur-${i}" min="1" max="120"
+                   value="${sd.duration}" ${hasVid?'disabled title="Videoclip: automatische Länge"':''}
+                   onchange="sData[${i}].duration=parseFloat(this.value)||6;updateSummary()">
+            <span class="dur-unit">sek</span>
+          </div>
+
+          <div class="ctrl-lbl" style="margin-top:4px;">↔ Übergang</div>
+          <select class="trans-sel" id="trans-${i}" onchange="sData[${i}].fade=parseFloat(this.value)">
+            <option value="1.0" ${sd.fade===1.0?'selected':''}>Crossfade 1s</option>
+            <option value="0.5" ${sd.fade===0.5?'selected':''}>Crossfade 0.5s</option>
+            <option value="2.0" ${sd.fade===2.0?'selected':''}>Crossfade 2s</option>
+            <option value="0" ${sd.fade===0?'selected':''}>Harter Schnitt</option>
+          </select>
+
+          <div class="ctrl-lbl" style="margin-top:4px;">🎨 Prompt</div>
+          <div class="prompt-mini" id="pr-${i}">${esc(pr.slice(0,90))}…</div>
+          <div style="display:flex;gap:5px;margin-top:2px;">
+            <button class="copy-btn-mini" onclick="copyPr(${i},this)">📋 kopieren</button>
+            ${hasMedia?`<button class="clear-btn" onclick="clearMedia(${i})">✕ löschen</button>`:''}
+          </div>
+        </div>
+      </div>`;
+
+    c.appendChild(card);
+
+    // Autoplay video preview
+    if (hasVid) {
+      const v = document.getElementById('videl-'+i);
+      if (v) v.play().catch(()=>{});
+    }
+  });
+
+  updateProgress();
+  updateSummary();
+}
+
+function triggerImg(i) { document.getElementById('fi-'+i).click(); }
+function triggerVid(i) { document.getElementById('fv-'+i).click(); }
+
+function handleImg(i, input) {
+  const f = input.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    sData[i] = {...sData[i], type:'image', dataURL:e.target.result};
+    refreshCard(i);
+    toast(`Bild geladen – Szene ${i+1}`);
+  };
+  r.readAsDataURL(f);
+}
+
+function handleVid(i, input) {
+  const f = input.files[0]; if(!f) return;
+  if (f.size > 100 * 1024 * 1024) { toast('Video zu gross (max. 100MB)', true); return; }
+  const url = URL.createObjectURL(f);
+  // Get duration
+  const tmp = document.createElement('video');
+  tmp.src = url;
+  tmp.onloadedmetadata = () => {
+    const dur = Math.ceil(tmp.duration) || 10;
+    const r = new FileReader();
+    r.onload = e => {
+      sData[i] = {...sData[i], type:'video', dataURL:e.target.result, duration:dur};
+      refreshCard(i);
+      toast(`Video geladen – ${dur}s · Szene ${i+1}`);
+    };
+    r.readAsDataURL(f);
+  };
+}
+
+function clearMedia(i) {
+  sData[i] = {...sData[i], type:'none', dataURL:null};
+  refreshCard(i);
+}
+
+function refreshCard(i) {
+  renderScenes(); // Re-render all (simple approach)
+  updateProgress();
+  updateSummary();
+}
+
+function applyGlobalTiming() {
+  const dur = parseFloat(document.getElementById('glob-img-dur').value) || 6;
+  const fade = parseFloat(document.getElementById('glob-fade').value) || 1.0;
+  sData.forEach((sd, i) => {
+    if (sd.type !== 'video') sd.duration = dur;
+    sd.fade = fade;
+  });
+  renderScenes();
+  toast('Timing auf alle angewendet!');
+}
+
+function updateProgress() {
+  const filled = sData.filter(s=>s.type!=='none').length;
+  const pct = scenes.length > 0 ? (filled/scenes.length)*100 : 0;
+  document.getElementById('img-prog').style.width = pct+'%';
+  document.getElementById('p2-meta').innerHTML =
+    `<strong style="color:var(--gold)">${scenes.length}</strong> Szenen &nbsp;·&nbsp; ` +
+    `<strong style="color:var(--green2)">${sData.filter(s=>s.type==='image').length}</strong> Bilder &nbsp;·&nbsp; ` +
+    `<strong style="color:#6a8ad0">${sData.filter(s=>s.type==='video').length}</strong> Videoclips &nbsp;·&nbsp; ` +
+    `<span style="color:var(--dim)">${scenes.length-filled} ohne Medien</span>`;
+}
+
+function copyPr(i, btn) {
+  navigator.clipboard.writeText(sData[i].prompt||'').then(()=>{
+    btn.textContent='✅ kopiert'; btn.classList.add('done');
+    setTimeout(()=>{btn.textContent='📋 kopieren';btn.classList.remove('done');},2000);
+  });
+}
+
+/* ════════════════════════════════════
+   PAGE 3 – EXPORT SUMMARY
+════════════════════════════════════ */
+function updateExpPage() {
+  const total = scenes.length;
+  const withMedia = sData.filter(s=>s.type!=='none').length;
+  const itDur = parseFloat(document.getElementById('it-dur')?.value) || 3;
+  const itWhen = document.getElementById('it-when')?.value || 'all';
+  const missingMode = document.getElementById('exp-missing')?.value || 'black';
+
+  let totalDur = sData.reduce((acc,sd,i)=>{
+    if (missingMode==='skip' && sd.type==='none') return acc;
+    return acc + (sd.duration||6);
+  }, 0);
+  // Add intertitle duration
+  if (itWhen === 'all') {
+    totalDur += scenes.filter(s=>s.dialoge.length>0).length * itDur;
+  }
+
+  document.getElementById('sum-scenes').textContent = total;
+  document.getElementById('sum-media').textContent = withMedia;
+  document.getElementById('sum-dur').textContent = Math.round(totalDur)+'s';
+  document.getElementById('exp-sub').innerHTML =
+    `<strong style="color:var(--gold)">${withMedia}/${total}</strong> Szenen haben Medien` +
+    (itWhen==='all' ? ` · <strong style="color:var(--gold)">${scenes.filter(s=>s.dialoge.length>0).length}</strong> Zwischentitel` : '') +
+    (withMedia < total ? '. Leere Szenen werden als schwarzes Bild gerendert.' : '. ✅ Alle bereit!');
+}
+
+function updateSummary() {
+  if (document.getElementById('page3').classList.contains('active')) updateExpPage();
+}
+
+/* ════════════════════════════════════
+   EXPORT – CANVAS + MEDIARECORDER
+════════════════════════════════════ */
+async function startExport() {
+  const [W,H] = document.getElementById('exp-res').value.split('x').map(Number);
+  const missingMode = document.getElementById('exp-missing').value;
+  const overlayMode = document.getElementById('exp-overlay').value;
+  const transType   = document.getElementById('exp-trans').value;
+  const itStyle     = document.getElementById('it-style').value;
+  const itDur       = parseFloat(document.getElementById('it-dur').value) || 3;
+  const itWhen      = document.getElementById('it-when').value;
+  const FPS = 25;
+
+  // Build render list: each entry is either a 'scene' or an 'intertitle'
+  const rawList = scenes.map((s, i) => ({s, sd:sData[i], i}))
+    .filter(({sd}) => !(missingMode==='skip' && sd.type==='none'));
+
+  // Expand: scene → [scene, intertitle(s)?]
+  const list = [];
+  for (const item of rawList) {
+    list.push({kind:'scene', ...item});
+    if (itWhen === 'all' && item.s.dialoge.length > 0) {
+      list.push({kind:'intertitle', s:item.s, dialoge:item.s.dialoge, dur:itDur});
+    }
+  }
+
+  if (!list.length) { toast('Keine Szenen zu rendern!', true); return; }
+
+  // Setup canvas
+  const canvas = document.getElementById('rc');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // Setup recorder
+  const stream = canvas.captureStream(FPS);
+  const mime = ['video/mp4;codecs=avc1','video/webm;codecs=vp9','video/webm']
+    .find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+  const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+
+  const chunks = [];
+  const recorder = new MediaRecorder(stream, {mimeType:mime, videoBitsPerSecond:6000000});
+  recorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, {type:mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download=filmTitle.toLowerCase().replace(/\s+/g,'-')+'.'+ext;
+    a.click(); URL.revokeObjectURL(url);
+    document.getElementById('rp').style.display = 'none';
+    document.getElementById('exp-btn').disabled = false;
+    document.getElementById('exp-btn').textContent = '🎬 Film exportieren';
+    toast('✅ Export fertig – Download startet!');
+  };
+
+  document.getElementById('rp').style.display = 'block';
+  document.getElementById('exp-btn').disabled = true;
+  document.getElementById('exp-btn').textContent = 'Rendering…';
+  recorder.start();
+
+  // Preload all images
+  const imgCache = {};
+  for (const item of list) {
+    if (item.kind==='scene' && item.sd.type === 'image') {
+      imgCache[item.i] = await loadImg(item.sd.dataURL);
+    }
+  }
+
+  const sceneItems = list.filter(x=>x.kind==='scene');
+
+  // Render loop
+  for (let li = 0; li < list.length; li++) {
+    const item = list[li];
+    // Find next scene image for crossfade
+    const nextSceneItem = list.slice(li+1).find(x => x.kind==='scene' && x.sd.type==='image');
+    const nextImg = nextSceneItem ? imgCache[nextSceneItem.i] || null : null;
+
+    const sceneIdx = sceneItems.indexOf(item);
+    const totalItems = list.length;
+    document.getElementById('rp-stage').textContent =
+      item.kind==='scene'
+        ? `Szene ${item.s.nr}/${scenes.length}: ${item.s.kopf.slice(0,50)}`
+        : `Zwischentitel: ${item.s.kopf.slice(0,40)}`;
+    setRpBar(Math.round((li / totalItems) * 100));
+
+    if (item.kind === 'intertitle') {
+      // ── INTERTITLE CARD ──
+      await renderIntertitle(ctx, W, H, item.s, item.dialoge, itDur, itStyle, FPS, transType, nextImg);
+
+    } else {
+      const {s, sd, i} = item;
+      const dur = sd.duration || 6;
+      const fadeDur = transType === 'cut' ? 0 : (sd.fade || 1.0);
+      const fadeFrames = Math.round(fadeDur * FPS);
+      const mainFrames = Math.max(1, Math.round(dur * FPS));
+      const curImg = sd.type === 'image' ? imgCache[i] : null;
+
+      if (sd.type === 'video' && sd.dataURL) {
+        await renderVideoScene(ctx, sd, W, H, s, overlayMode, FPS, fadeFrames, nextImg, transType);
+      } else {
+        for (let f = 0; f < mainFrames; f++) {
+          drawImageOrPlaceholder(ctx, W, H, curImg, s, missingMode, f/mainFrames, overlayMode, 1.0);
+          if (transType !== 'cut' && f >= mainFrames - fadeFrames && fadeFrames > 0) {
+            const a = (mainFrames - f) / fadeFrames;
+            if (transType === 'black') {
+              ctx.fillStyle = `rgba(0,0,0,${1-a})`; ctx.fillRect(0,0,W,H);
+            } else if (transType === 'fade' && nextImg) {
+              ctx.globalAlpha = 1-a; ctx.drawImage(nextImg,0,0,W,H); ctx.globalAlpha=1;
+            }
+          }
+          if (f % 4 === 0) await sleep(0);
+        }
+      }
+    }
+  }
+
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+  await sleep(400);
+  recorder.stop();
+  setRpBar(100);
+  document.getElementById('rp-stage').textContent = 'Fertig! Download startet…';
+}
+
+/* ════════════════════════════════════
+   INTERTITLE RENDERER
+════════════════════════════════════ */
+async function renderIntertitle(ctx, W, H, scene, dialoge, dur, style, FPS, transType, nextImg) {
+  const totalFrames = Math.round(dur * FPS);
+  const fadeFrames  = transType === 'cut' ? 0 : Math.round(Math.min(0.6, dur*0.2) * FPS);
+
+  // Style presets
+  const styles = {
+    classic: { bg:'#000000', border:'rgba(200,160,82,0.7)', figColor:'#c8a052', textColor:'#e8e0d0', ornament:'◆', grain:true },
+    white:   { bg:'#f5f0e8', border:'rgba(0,0,0,0.4)',      figColor:'#222',    textColor:'#111',    ornament:'—', grain:false },
+    film:    { bg:'#0e0c08', border:'rgba(180,160,100,0.5)', figColor:'#c8b060', textColor:'#d4c898', ornament:'✦', grain:true },
+  };
+  const st = styles[style] || styles.classic;
+
+  // Helper: wrap text into lines
+  function wrapText(text, font, maxW) {
+    ctx.font = font;
+    const words = text.split(' ');
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+      const test = cur ? cur+' '+w : w;
+      if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = w; }
+      else cur = test;
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
+  for (let f = 0; f < totalFrames; f++) {
+    // Fade in/out alpha
+    const fadeIn  = f < fadeFrames ? f / fadeFrames : 1;
+    const fadeOut = f > totalFrames - fadeFrames ? (totalFrames - f) / fadeFrames : 1;
+    const alpha   = Math.min(fadeIn, fadeOut);
+
+    // Background
+    ctx.fillStyle = st.bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Grain overlay for film style
+    if (st.grain) {
+      ctx.globalAlpha = 0.04 * alpha;
+      for (let gx = 0; gx < W; gx += 4) {
+        for (let gy = 0; gy < H; gy += 4) {
+          if (Math.random() > 0.5) { ctx.fillStyle='#fff'; ctx.fillRect(gx,gy,2,2); }
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.globalAlpha = alpha;
+
+    // Outer decorative border
+    const bm = W * 0.055; // border margin
+    ctx.strokeStyle = st.border;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(bm, bm, W-bm*2, H-bm*2);
+    // Inner hairline
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(bm+8, bm+8, W-bm*2-16, H-bm*2-16);
+
+    // Corner ornaments
+    const co = bm + 4;
+    const cs = 20;
+    ctx.lineWidth = 1.5;
+    [ [co,co], [W-co,co], [co,H-co], [W-co,H-co] ].forEach(([cx,cy]) => {
+      const sx = cx===co ? 1 : -1, sy = cy===co ? 1 : -1;
+      ctx.beginPath(); ctx.moveTo(cx, cy+sy*cs); ctx.lineTo(cx, cy); ctx.lineTo(cx+sx*cs, cy);
+      ctx.stroke();
+    });
+
+    const cxW = W / 2;
+    const contentTop = H * 0.22;
+    let y = contentTop;
+
+    // Ornament top
+    ctx.font = `${Math.round(H*0.03)}px serif`;
+    ctx.fillStyle = st.figColor;
+    ctx.textAlign = 'center';
+    ctx.fillText(st.ornament, cxW, y);
+    y += H * 0.07;
+
+    // Scene heading (small, subtle)
+    ctx.font = `${Math.round(H*0.018)}px 'Courier Prime',monospace`;
+    ctx.fillStyle = st.style==='white' ? 'rgba(0,0,0,0.35)' : 'rgba(200,160,82,0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText(scene.kopf.toUpperCase().slice(0,55), cxW, y);
+    y += H * 0.06;
+
+    // Thin divider line
+    ctx.strokeStyle = st.border;
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(cxW - W*0.15, y); ctx.lineTo(cxW + W*0.15, y);
+    ctx.stroke();
+    y += H * 0.055;
+
+    // Dialoge
+    const maxTextW = W * 0.66;
+    for (const dlg of dialoge) {
+      // Figure name
+      const figSz = Math.round(H * 0.022);
+      ctx.font = `bold ${figSz}px 'Courier Prime',monospace`;
+      ctx.fillStyle = st.figColor;
+      ctx.textAlign = 'center';
+      ctx.fillText(dlg.figur.toUpperCase(), cxW, y);
+      y += figSz * 1.6;
+
+      // Dialog text – italic Playfair
+      const txtSz = Math.round(H * 0.032);
+      const lines = wrapText(`„${dlg.text}"`, `italic ${txtSz}px 'Playfair Display',serif`, maxTextW);
+      ctx.font = `italic ${txtSz}px 'Playfair Display',serif`;
+      ctx.fillStyle = st.textColor;
+      for (const line of lines) {
+        ctx.fillText(line, cxW, y);
+        y += txtSz * 1.55;
+      }
+      y += H * 0.04; // gap between dialogue blocks
+
+      if (y > H * 0.82) break; // overflow protection
+    }
+
+    // Bottom ornament
+    ctx.font = `${Math.round(H*0.025)}px serif`;
+    ctx.fillStyle = st.figColor;
+    ctx.fillStyle = st.style==='white' ? 'rgba(0,0,0,0.3)' : 'rgba(200,160,82,0.4)';
+    ctx.fillText(st.ornament, cxW, H * 0.88);
+
+    ctx.globalAlpha = 1;
+
+    // Crossfade at end into next scene
+    if (transType==='fade' && nextImg && f >= totalFrames - fadeFrames && fadeFrames > 0) {
+      const fa = (totalFrames - f) / fadeFrames;
+      ctx.globalAlpha = 1 - fa;
+      ctx.drawImage(nextImg, 0, 0, W, H);
+      ctx.globalAlpha = 1;
+    }
+
+    if (f % 3 === 0) await sleep(0);
+  }
+}
+
+async function renderVideoScene(ctx, sd, W, H, scene, overlayMode, FPS, fadeFrames, nextImg, transType) {
+  return new Promise(async resolve => {
+    const vid = document.createElement('video');
+    vid.src = sd.dataURL;
+    vid.muted = true;
+    vid.playsInline = true;
+    await new Promise(r => { vid.onloadeddata = r; vid.load(); });
+
+    const totalFrames = Math.round(vid.duration * FPS);
+    vid.currentTime = 0;
+    await sleep(50);
+    vid.play();
+
+    for (let f = 0; f < totalFrames; f++) {
+      ctx.drawImage(vid, 0, 0, W, H);
+      if (overlayMode !== 'none') drawOverlay(ctx, W, H, scene, overlayMode, 1.0);
+      // Fade out at end
+      if (transType !== 'cut' && f >= totalFrames - fadeFrames && fadeFrames > 0 && nextImg) {
+        const alpha = (totalFrames - f) / fadeFrames;
+        ctx.globalAlpha = 1 - alpha;
+        ctx.drawImage(nextImg, 0, 0, W, H);
+        ctx.globalAlpha = 1;
+      }
+      if (f % 3 === 0) await sleep(0);
+    }
+    vid.pause();
+    resolve();
+  });
+}
+
+function drawImageOrPlaceholder(ctx, W, H, img, scene, missingMode, progress, overlayMode, alpha) {
+  if (img) {
+    const scale = 1 + progress * 0.03;
+    const ox = (W - W*scale)/2, oy = (H - H*scale)/2;
+    ctx.drawImage(img, ox, oy, W*scale, H*scale);
+  } else {
+    if (missingMode === 'black' || missingMode === 'skip') {
+      ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
+    } else {
+      // Placeholder with scene text
+      ctx.fillStyle = '#08080f'; ctx.fillRect(0,0,W,H);
+      ctx.strokeStyle = 'rgba(200,160,82,0.06)'; ctx.lineWidth=1;
+      for(let x=0;x<W;x+=100){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+      for(let y=0;y<H;y+=100){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+      ctx.fillStyle='rgba(200,160,82,0.2)';
+      ctx.font=`${Math.round(H*0.03)}px monospace`;
+      ctx.textAlign='center';
+      ctx.fillText(scene.kopf, W/2, H/2);
+    }
+  }
+  if (overlayMode !== 'none') drawOverlay(ctx, W, H, scene, overlayMode, alpha);
+}
+
+function drawOverlay(ctx, W, H, scene, mode, alpha) {
+  const ovH = H * 0.25;
+  const g = ctx.createLinearGradient(0, H-ovH*1.8, 0, H);
+  g.addColorStop(0,'rgba(0,0,0,0)');
+  g.addColorStop(1,`rgba(0,0,0,${0.8*alpha})`);
+  ctx.fillStyle=g; ctx.fillRect(0, H-ovH*1.8, W, ovH*1.8);
+
+  ctx.globalAlpha = alpha;
+  ctx.textAlign = 'left';
+  const sz1 = Math.round(H*0.017), sz2 = Math.round(H*0.026);
+
+  ctx.fillStyle='rgba(200,160,82,0.9)';
+  ctx.font = `${sz1}px 'Courier Prime',monospace`;
+  ctx.fillText(`SZENE ${String(scene.nr).padStart(2,'0')}`, W*0.05, H-ovH+sz1*1.2);
+
+  ctx.fillStyle='rgba(237,229,213,0.92)';
+  ctx.font = `bold ${sz2}px 'Courier Prime',monospace`;
+  ctx.fillText(scene.kopf.slice(0,62), W*0.05, H-ovH+sz1*3.2);
+
+  if (mode === 'full' && scene.dialoge.length) {
+    const d = scene.dialoge[0];
+    const txt = `${d.figur}: „${d.text.slice(0,52)}${d.text.length>52?'…':'"'}`;
+    ctx.fillStyle='rgba(200,160,100,0.85)';
+    ctx.font = `italic ${Math.round(H*0.02)}px 'Courier Prime',monospace`;
+    ctx.fillText(txt, W*0.05, H-Math.round(H*0.02)*2);
+  }
+  ctx.globalAlpha=1;
+}
+
+function setRpStatus(li, total, kopf) {
+  setRpBar(Math.round((li/total)*100));
+  document.getElementById('rp-stage').textContent =
+    `Szene ${li+1} / ${total}: ${kopf.slice(0,55)}`;
+}
+function setRpBar(pct) {
+  document.getElementById('rp-bar').style.width = pct+'%';
+}
+
+/* ════════════════════════════════════
+   INIT FROM FILE
+════════════════════════════════════ */
+function processText(text, name) {
+  scenes = parse(text);
+  if (!scenes.length) { toast('Keine Szenen gefunden!', true); return; }
+  filmTitle = name.replace(/\.txt$/i,'').replace(/[_-]/g,' ').toUpperCase();
+  sData = scenes.map(() => ({ type:'none', dataURL:null, duration:6, fade:1.0, prompt:'' }));
+  document.getElementById('p2-film-title').textContent = filmTitle;
+  renderScenes();
+  goPage(2);
+  toast(`${scenes.length} Szenen geladen!`);
+}
+
+document.getElementById('file-in').addEventListener('change', function(e){
+  const f=e.target.files[0]; if(!f) return;
+  new FileReader().onload = ev => processText(ev.target.result, f.name);
+  const r=new FileReader(); r.onload=ev=>processText(ev.target.result,f.name); r.readAsText(f,'utf-8');
+});
+const da=document.getElementById('drop-area');
+da.addEventListener('dragover',e=>{e.preventDefault();da.classList.add('over');});
+da.addEventListener('dragleave',()=>da.classList.remove('over'));
+da.addEventListener('drop',e=>{
+  e.preventDefault();da.classList.remove('over');
+  const f=e.dataTransfer.files[0];
+  if(!f||!f.name.endsWith('.txt')){toast('Bitte .txt-Datei!',true);return;}
+  const r=new FileReader();r.onload=ev=>processText(ev.target.result,f.name);r.readAsText(f,'utf-8');
+});
+
+function loadDemo() {
+  processText(`MEPHISTO
+
+INT. BERLINER THEATER - NACHT
+
+Die große Bühne liegt im Halbdunkel. Scheinwerfer beleuchten einzelne Requisiten.
+HENDRIK HÖFGEN tritt auf als Mephisto. Bedrohlich, charismatisch.
+
+        HENDRIK
+  Ich bin der Geist, der stets verneint!
+
+        NICOLETTA
+  Hendrik – du bist grandios. Du bist ein anderer Mensch.
+
+INT. DIREKTORENBÜRO - TAG
+
+Prachtvolles Büro mit NS-Fahnen. Sonnenlicht durch hohe Fenster.
+HENDRIK steht vor dem GENERALINTENDANTEN.
+
+        GENERALINTENDANT
+  Sie haben eine große Karriere vor sich, Höfgen.
+  Vorausgesetzt, Sie bleiben... loyal.
+
+EXT. BERLINER STRASSE - MORGEN
+
+Graue Stadtlandschaft. Herbstblätter wehen über das Pflaster.
+HENDRIK geht allein.
+
+        HENDRIK
+  Was bin ich geworden?
+
+INT. GARDEROBE - NACHT
+
+Spiegel überall. Schminktische mit Glühbirnen. Licht flackert.
+HENDRIK sitzt allein vor dem Spiegel.
+
+        HENDRIK
+  Wer bist du? Wer bin ich?
+  Bin ich Mephisto – oder ist Mephisto ich?`, 'mephisto.txt');
+}
+
+/* ════════════════════════════════════
+   HELPERS
+════════════════════════════════════ */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show'+(err?' err':'');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+function loadImg(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src;});}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+</script>
+</body>
+</html>
